@@ -18,7 +18,9 @@
     "next-connect": "^1.0.0",
     "pg": "^8.13.1",
     "react": "19.0.0-rc-66855b96-20241106",
-    "react-dom": "19.0.0-rc-66855b96-20241106"
+    "react-dom": "19.0.0-rc-66855b96-20241106",
+    "react-firebase-hooks": "^5.1.1",
+    "react-router-dom": "^7.1.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, ChangeEvent, FormEvent } from "react";
-import { auth, db, storage } from "../lib/firebase"; // Използваме експортираните Firebase услуги
+import { useRouter } from "next/navigation";
+import { auth, db } from "../lib/firebase";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { setDoc, doc } from "firebase/firestore";
 
 interface FormData {
   name: string;
@@ -14,12 +14,8 @@ interface FormData {
   confirmPassword: string;
 }
 
-interface RegisterProps {
-  onSuccess: () => void;
-}
-
-const Register = ({ onSuccess }: RegisterProps) => {
-  const [profileImage, setProfileImage] = useState<File | null>(null);
+const Register = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState<FormData>({
     name: "",
     username: "",
@@ -29,13 +25,6 @@ const Register = ({ onSuccess }: RegisterProps) => {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setProfileImage(file);
-    }
-  };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -50,7 +39,7 @@ const Register = ({ onSuccess }: RegisterProps) => {
     setError(null);
     setLoading(true);
 
-    const { name, username, email, password, confirmPassword } = formData;
+    const { username, email, password, confirmPassword } = formData;
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
@@ -59,7 +48,7 @@ const Register = ({ onSuccess }: RegisterProps) => {
     }
 
     try {
-      // Create user with Firebase Auth
+      // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -67,34 +56,23 @@ const Register = ({ onSuccess }: RegisterProps) => {
       );
       const user = userCredential.user;
 
-      // Upload profile image to Firebase Storage
-      let profileImageUrl = null;
-      if (profileImage) {
-        const storageRef = ref(storage, `profileImages/${user.uid}`);
-        await uploadBytes(storageRef, profileImage);
-        profileImageUrl = await getDownloadURL(storageRef);
-      }
-
-      // Update user profile in Firebase Auth
+      // Update Firebase Auth profile with username
       await updateProfile(user, {
         displayName: username,
-        photoURL: profileImageUrl,
       });
 
-      // Save additional user data in Firestore
+      // Save username to Firestore
       await setDoc(doc(db, "users", user.uid), {
-        name,
         username,
         email,
-        profileImage: profileImageUrl,
-        createdAt: serverTimestamp(),
       });
 
-      setLoading(false);
-      onSuccess(); // Redirect or notify successful registration
+      // Redirect to home page
+      router.push("/");
     } catch (error: any) {
       console.error("Error during registration:", error);
-      setError(error.message || "Registration failed.");
+      setError("Registration failed. Please try again.");
+    } finally {
       setLoading(false);
     }
   };
@@ -149,29 +127,6 @@ const Register = ({ onSuccess }: RegisterProps) => {
           className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         />
-        <input
-          type="file"
-          id="profileImage"
-          accept="image/*"
-          onChange={handleImageChange}
-          className="hidden"
-        />
-        <div className="flex flex-col items-center">
-          <label
-            htmlFor="profileImage"
-            className="cursor-pointer bg-yellow-500 rounded-lg h-32 w-32 flex items-center justify-center text-white text-4xl"
-          >
-            {profileImage ? (
-              <img
-                src={URL.createObjectURL(profileImage)}
-                alt="Profile"
-                className="rounded-lg h-full w-full object-cover"
-              />
-            ) : (
-              <span>+</span>
-            )}
-          </label>
-        </div>
         <button
           type="submit"
           disabled={loading}

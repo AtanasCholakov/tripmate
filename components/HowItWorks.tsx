@@ -1,4 +1,24 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { auth } from "../lib/firebase"; // Уверете се, че използвате Firebase Auth
+
 const HowItWorks = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Проверка на текущото състояние на потребителя
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setIsLoggedIn(!!user); // Задава true, ако потребителят е влязъл, иначе false
+    });
+
+    return () => unsubscribe(); // Изчистване на слушателя при размонтиране
+  }, []);
+
+  if (isLoggedIn) {
+    return null; // Скриваме секцията, ако потребителят е влязъл
+  }
+
   return (
     <section className="py-16 bg-gray-100">
       <h2 className="text-center text-3xl font-bold mb-12">
