@@ -5,6 +5,7 @@ import { auth, db } from "../lib/firebase";
 import { addDoc, collection } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import CITIES from "@/lib/cities";
+import { useRouter } from "next/navigation";
 
 const CreateAdForm = () => {
   const [start, setStart] = useState("");
@@ -16,6 +17,7 @@ const CreateAdForm = () => {
   const [car, setCar] = useState("");
   const [description, setDescription] = useState("");
   const [user] = useAuthState(auth);
+  const router = useRouter();
 
   const MAX_STOPS = 5;
 
@@ -42,7 +44,7 @@ const CreateAdForm = () => {
       return;
     }
 
-    if (!start || !end || !date || !seats || !car) {
+    if (!start || !end || !date || !seats) {
       alert("Всички задължителни полета трябва да бъдат попълнени.");
       return;
     }
@@ -59,22 +61,27 @@ const CreateAdForm = () => {
 
     try {
       const adsCollection = collection(db, "ads");
-      await addDoc(adsCollection, {
-        start: start.toLowerCase(),
-        end: end.toLowerCase(),
-        stops: stops.map((stop) => stop.toLowerCase()),
+      const docRef = await addDoc(adsCollection, {
+        start, // Записваме оригиналния град
+        startLower: start.toLowerCase(), // Записваме града в малки букви
+        end, // Записваме оригиналната крайна точка
+        endLower: end.toLowerCase(), // Записваме крайната точка в малки букви
+        stops: stops.map((stop) => stop), // Ако имате спирания, съхраняваме ги
         date,
         seats: Number(seats),
         car,
         description,
-        createdBy: {
-          uid: user.uid,
-          email: user.email,
-        },
+        userId: user.uid,
         createdAt: new Date(),
       });
 
+      const adId = docRef.id; // Вземаме ID-то на документа
       alert("Обявата е създадена успешно!");
+
+      // Пренасочване към страницата с детайли за обявата
+      router.push(`/ad-details?id=${adId}`);
+
+      // Нулираме полетата на формата
       setStart("");
       setEnd("");
       setStops([]);
@@ -133,11 +140,6 @@ const CreateAdForm = () => {
             value={stopInput}
             onChange={(e) => setStopInput(e.target.value)}
           />
-          <datalist id="cities">
-            {CITIES.map((city, index) => (
-              <option key={index} value={city} />
-            ))}
-          </datalist>
           <button
             type="button"
             className="bg-green-500 text-white px-20 py-2 mx-auto rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-green-600 transition mt-2"
@@ -164,11 +166,6 @@ const CreateAdForm = () => {
               ))}
             </ul>
           )}
-          {stops.length === MAX_STOPS && (
-            <p className="text-red-500 font-semibold mt-2">
-              Достигнат е максималният брой спирки ({MAX_STOPS}).
-            </p>
-          )}
         </div>
         <input
           type="date"
@@ -188,11 +185,10 @@ const CreateAdForm = () => {
         />
         <input
           type="text"
-          placeholder="Автомобил"
+          placeholder="Автомобил (опционално)"
           className="p-2 border rounded"
           value={car}
           onChange={(e) => setCar(e.target.value)}
-          required
         />
         <textarea
           placeholder="Описание (опционално)"

@@ -1,6 +1,6 @@
-"use client";
-
 import { useState } from "react";
+import { db } from "../lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import OfferCard from "./OfferCard";
 import CITIES from "@/lib/cities";
 
@@ -10,27 +10,39 @@ const SearchAdForm = () => {
   const [date, setDate] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // Фиктивни данни за обявите
-  const ads = [
-    { start: "София", end: "Пловдив", date: "2024-12-25", seats: 3 },
-    { start: "Варна", end: "Бургас", date: "2024-12-26", seats: 2 },
-    { start: "София", end: "Бургас", date: "2024-12-27", seats: 4 },
-  ];
+  const fetchAds = async () => {
+    setLoading(true);
+    try {
+      const adsRef = collection(db, "ads");
+      const constraints = [];
+
+      // Преобразуваме началната и крайната точка в малки букви за търсене
+      if (start)
+        constraints.push(where("startLower", "==", start.toLowerCase()));
+      if (end) constraints.push(where("endLower", "==", end.toLowerCase()));
+      if (date) constraints.push(where("date", "==", date));
+
+      const q = query(adsRef, ...constraints);
+      const querySnapshot = await getDocs(q);
+
+      const ads = querySnapshot.docs.map((doc) => ({
+        id: doc.id, // Извличане на уникалното ID на документа
+        ...doc.data(), // Добавяне на данните от документа
+      }));
+      setResults(ads);
+    } catch (error) {
+      console.error("Error fetching ads:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Филтриране на обявите
-    const filteredAds = ads.filter(
-      (ad) =>
-        (!start || ad.start.toLowerCase().includes(start.toLowerCase())) &&
-        (!end || ad.end.toLowerCase().includes(end.toLowerCase())) &&
-        (!date || ad.date === date)
-    );
-
-    setResults(filteredAds);
-    setIsSearching(false); // Скриване на формата
+    fetchAds();
+    setIsSearching(false); // Скриване на формата след търсене
   };
 
   return (
@@ -83,17 +95,27 @@ const SearchAdForm = () => {
             </button>
           </form>
         </>
+      ) : loading ? (
+        <div className="text-center py-10">
+          <p className="text-xl font-bold text-gray-600">
+            Зареждане на обявите...
+          </p>
+        </div>
       ) : results.length > 0 ? (
         <div>
           <h2 className="text-2xl font-bold mb-4">Намерени обяви:</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {results.map((ad, index) => (
+            {results.map((ad) => (
               <OfferCard
-                key={index}
+                key={ad.id}
+                docId={ad.id}
+                id={ad.userId}
                 start={ad.start}
                 end={ad.end}
                 date={ad.date}
                 seats={ad.seats}
+                car={ad.car}
+                description={ad.description}
               />
             ))}
           </div>

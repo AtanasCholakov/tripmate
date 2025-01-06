@@ -55,13 +55,13 @@ const Hero = () => {
         <div className="p-5">
           <div className="flex justify-center gap-4 mb-8 mt-5">
             <button
-              className={`bg-green-500 text-white px-6 py-2 rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-green-600 transition duration-300`}
+              className="bg-green-500 text-white px-6 py-2 rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-green-600 transition duration-300"
               onClick={() => setActiveSection("search")}
             >
               Търсене на обява
             </button>
             <button
-              className={`bg-white text-black px-6 py-2 rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-gray-100 transition duration-300 border border-black`}
+              className="bg-white text-black px-6 py-2 rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-gray-100 transition duration-300 border border-black"
               onClick={() => setActiveSection("create")}
             >
               Създаване на обява

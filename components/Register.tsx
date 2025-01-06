@@ -39,7 +39,7 @@ const Register = () => {
     setError(null);
     setLoading(true);
 
-    const { username, email, password, confirmPassword } = formData;
+    const { name, username, email, password, confirmPassword } = formData;
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
@@ -61,10 +61,13 @@ const Register = () => {
         displayName: username,
       });
 
-      // Save username to Firestore
+      // Save user data to Firestore
       await setDoc(doc(db, "users", user.uid), {
+        name, // Save the user's full name
         username,
         email,
+        rating: 0, // Initial rating
+        createdAt: new Date(), // Profile creation timestamp
       });
 
       // Redirect to home page
