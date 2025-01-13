@@ -1,8 +1,10 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { auth, db } from "../lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import {
+  onAuthStateChanged,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+} from "firebase/auth";
 import {
   doc,
   getDoc,
@@ -10,12 +12,14 @@ import {
   query,
   where,
   getDocs,
+  deleteDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface UserProfile {
-  uid: string; // добавено uid
+  uid: string;
   name: string;
   email: string;
   profilePicture?: string;
@@ -34,6 +38,8 @@ interface OfferCardProps {
   seats: number;
   car?: string;
   description?: string;
+  onDelete: (docId: string) => void;
+  onEdit: (docId: string) => void;
 }
 
 const RatingComponent = ({
@@ -74,6 +80,9 @@ const ProfilePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<"profile" | "ads">("profile");
   const [userAds, setUserAds] = useState<any[]>([]);
+  const [password, setPassword] = useState<string>("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -95,7 +104,7 @@ const ProfilePage = () => {
           const averageRating = totalVotes > 0 ? totalRating / totalVotes : 0;
 
           setUser({
-            uid: uid, // добавяме uid тук
+            uid: uid,
             name: userData.name,
             email: userData.email,
             username: userData.username,
@@ -150,7 +159,39 @@ const ProfilePage = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleEdit = () => router.push("/profile/edit");
+  const handleEdit = (docId: string) => router.push(`/ad-edit?id=${docId}`);
+
+  const handleDelete = async (docId: string) => {
+    try {
+      setUserAds((prevAds) => prevAds.filter((ad) => ad.docId !== docId));
+      await deleteDoc(doc(db, "ads", docId));
+      alert("Обявата беше изтрита успешно!");
+    } catch (err) {
+      console.error(err);
+      alert("Възникна грешка при изтриването на обявата.");
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    if (!password) {
+      alert("Моля въведете паролата си.");
+      return;
+    }
+    try {
+      const userCredential = EmailAuthProvider.credential(
+        user?.email!,
+        password
+      );
+      await reauthenticateWithCredential(auth.currentUser!, userCredential);
+      // Proceed with profile deletion after successful reauthentication
+      await deleteDoc(doc(db, "users", user?.uid!));
+      alert("Профилът е изтрит успешно!");
+      router.push("/");
+    } catch (err) {
+      console.error(err);
+      alert("Грешка при изтриването на профила. Проверете паролата си.");
+    }
+  };
 
   if (loading)
     return <p className="text-center mt-10">Зареждане на профила...</p>;
@@ -166,37 +207,81 @@ const ProfilePage = () => {
     seats,
     car,
     description,
-  }: OfferCardProps) => (
-    <div className="bg-white shadow-lg rounded-lg p-8 w-96 flex flex-col items-center mb-4">
-      <h3 className="text-lg font-semibold mb-4">Начална точка: {start}</h3>
-      <p>Крайна точка: {end}</p>
-      <p>Дата: {date}</p>
-      <p>Свободни места: {seats}</p>
-      <Link
-        href={{
-          pathname: "/offer-details",
-          query: {
-            id: docId, // ID на обявата
-            uid: user?.uid || "", // ID на потребителя
-            start: encodeURIComponent(start),
-            end: encodeURIComponent(end),
-            date: encodeURIComponent(date),
-            seats: encodeURIComponent(seats.toString()),
-            car: encodeURIComponent(car || ""),
-            description: encodeURIComponent(description || ""),
-          },
-        }}
-        className="w-full bg-green-500 text-white font-bold py-3 mt-3 rounded-bl-xl rounded-tr-xl hover:bg-green-600 transition text-center"
+    onDelete,
+    onEdit,
+  }: OfferCardProps) => {
+    const [isDeleted, setIsDeleted] = useState(false);
+
+    const handleDeleteClick = () => {
+      setIsDeleted(true);
+      setTimeout(() => {
+        onDelete(docId);
+      }, 500);
+    };
+
+    return (
+      <div
+        className={`bg-white shadow-lg rounded-lg p-8 w-full min-h-[350px] flex flex-col items-center mb-4 ${
+          isDeleted
+            ? "opacity-0 scale-0 h-0 overflow-hidden"
+            : "opacity-100 scale-100 h-auto"
+        } transition-all duration-500`}
       >
-        Преглед
-      </Link>
-    </div>
-  );
+        <h3 className="text-lg font-semibold mb-4">Начална точка: {start}</h3>
+        <p>Крайна точка: {end}</p>
+        <p>Дата: {date}</p>
+        <p>Свободни места: {seats}</p>
+        <Link
+          href={{
+            pathname: "/offer-details",
+            query: {
+              id: docId,
+              uid: user?.uid || "",
+              start: encodeURIComponent(start),
+              end: encodeURIComponent(end),
+              date: encodeURIComponent(date),
+              seats: encodeURIComponent(seats.toString()),
+              car: encodeURIComponent(car || ""),
+              description: encodeURIComponent(description || ""),
+            },
+          }}
+          className="w-full bg-green-500 text-white font-bold py-3 mt-3 mx-auto rounded-bl-xl rounded-tr-xl text-lg text-center relative overflow-hidden hover:bg-green-600 transition-all duration-300 transform hover:scale-105 group"
+        >
+          <span className="z-10 relative">Преглед</span>
+          <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+          <span className="absolute bottom-0 left-0 w-full h-1 bg-green-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+          <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
+        </Link>
+
+        <div className="flex justify-between mt-4 w-full space-x-4">
+          <button
+            onClick={() => onEdit(docId)}
+            className="w-1/2 bg-yellow-500 text-white font-bold py-2 px-4 rounded-md text-sm text-center relative overflow-hidden hover:bg-yellow-600 transition-all duration-300 transform hover:scale-105 group focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          >
+            <span className="z-10 relative">Редактиране</span>
+            <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+            <span className="absolute bottom-0 left-0 w-full h-1 bg-yellow-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+            <span className="absolute top-0 left-0 w-full h-full bg-yellow-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
+          </button>
+
+          <button
+            onClick={handleDeleteClick}
+            className="w-1/2 bg-red-500 text-white font-bold py-2 px-4 rounded-md text-sm text-center relative overflow-hidden hover:bg-red-600 transition-all duration-300 transform hover:scale-105 group focus:outline-none focus:ring-2 focus:ring-red-400"
+          >
+            <span className="z-10 relative">Изтриване</span>
+            <span className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+            <span className="absolute bottom-0 left-0 w-full h-1 bg-red-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+            <span className="absolute top-0 left-0 w-full h-full bg-red-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col bg-gray-100">
-      <div className="flex flex-grow max-w-5xl mx-auto bg-white shadow-sm rounded-lg overflow-hidden">
-        <aside className="w-1/3 bg-gray-50 border-r border-gray-200 p-6">
+      <div className="flex flex-grow max-w-7xl mx-auto bg-white shadow-sm rounded-lg overflow-hidden">
+        <aside className="w-1/4 bg-gray-50 border-r border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-700 mb-6">Меню</h2>
           <ul className="space-y-4">
             <li>
@@ -244,42 +329,91 @@ const ProfilePage = () => {
                   <h1 className="text-2xl font-semibold text-gray-800 mb-1">
                     {user.name}
                   </h1>
-                  <RatingComponent rating={user.rating} votes={user.votes} />
+                  <p className="text-gray-600">{user.username}</p>
+                  <p className="text-gray-500">{user.email}</p>
                 </div>
               </div>
-              <ul className="space-y-2 text-gray-600">
-                <li>
-                  <strong>Потребителско име:</strong> {user.username}
-                </li>
-                <li>
-                  <strong>Имейл:</strong> {user.email}
-                </li>
-                <li>
-                  <strong>Дата на регистрация:</strong> {user.createdAt}
-                </li>
-              </ul>
-              <button
-                onClick={handleEdit}
-                className="mt-6 bg-green-500 text-white font-bold py-2 px-6 rounded hover:bg-green-600"
-              >
-                Редактиране на профила
-              </button>
+
+              <RatingComponent rating={user.rating} votes={user.votes} />
+
+              <div className="mt-6">
+                <h3 className="text-xl font-semibold text-gray-700 mb-4">
+                  Опции
+                </h3>
+                <div className="space-y-4">
+                  <button
+                    onClick={() => router.push("/profile/edit")}
+                    className="w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded-md text-sm text-center"
+                  >
+                    Редактиране на профила
+                  </button>
+                  <button
+                    onClick={() => setShowPasswordModal(true)}
+                    className="w-full bg-red-500 text-white font-bold py-2 px-4 rounded-md text-sm text-center"
+                  >
+                    Изтриване на профил
+                  </button>
+                </div>
+              </div>
             </div>
           )}
+
           {selectedTab === "ads" && (
-            <div>
-              <h2 className="text-xl font-bold text-gray-800 mb-6">
+            <div className="bg-white shadow rounded-lg p-8">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">
                 Моите обяви
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {userAds.map((ad) => (
-                  <OfferCard key={ad.docId} {...ad} />
-                ))}
-              </div>
+              {userAds.length > 0 ? (
+                userAds.map((ad) => (
+                  <OfferCard
+                    key={ad.docId}
+                    docId={ad.docId}
+                    start={ad.start}
+                    end={ad.end}
+                    date={ad.date}
+                    seats={ad.seats}
+                    car={ad.car}
+                    description={ad.description}
+                    onDelete={handleDelete}
+                    onEdit={handleEdit}
+                  />
+                ))
+              ) : (
+                <p className="text-gray-500">Нямате обяви.</p>
+              )}
             </div>
           )}
         </main>
       </div>
+
+      {showPasswordModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg w-96">
+            <h2 className="text-2xl font-bold mb-4">Потвърдете паролата си</h2>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md mb-4"
+              placeholder="Вашата парола"
+            />
+            <div className="flex justify-between">
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="w-1/2 bg-gray-300 py-2 rounded-md text-center text-gray-700"
+              >
+                Отказ
+              </button>
+              <button
+                onClick={handleDeleteProfile}
+                className="w-1/2 bg-red-500 py-2 rounded-md text-center text-white"
+              >
+                Изтриване на профил
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

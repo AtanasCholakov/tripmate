@@ -1,13 +1,19 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { db } from "../lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import OfferCard from "./OfferCard";
 import CITIES from "@/lib/cities";
 
 const SearchAdForm = () => {
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
-  const [date, setDate] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [start, setStart] = useState(searchParams.get("start") || "");
+  const [end, setEnd] = useState(searchParams.get("end") || "");
+  const [date, setDate] = useState(searchParams.get("date") || "");
   const [results, setResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -39,10 +45,22 @@ const SearchAdForm = () => {
     }
   };
 
+  useEffect(() => {
+    if (!isSearching) fetchAds();
+  }, [start, end, date]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Добавяне на параметрите за търсене в URL
+    router.push(
+      `/?start=${encodeURIComponent(start)}&end=${encodeURIComponent(
+        end
+      )}&date=${encodeURIComponent(date)}`
+    );
+
     fetchAds();
-    setIsSearching(false); // Скриване на формата след търсене
+    setIsSearching(false);
   };
 
   return (
@@ -120,20 +138,27 @@ const SearchAdForm = () => {
             ))}
           </div>
           <button
-            className="mt-6 bg-green-500 text-white px-20 py-2 mx-auto rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-green-600 transition duration-300"
+            className="mt-6 px-20 py-2 mx-auto rounded-bl-xl rounded-tr-xl text-lg font-bold text-white relative overflow-hidden bg-green-500 hover:bg-green-600 transition-all duration-300 transform hover:scale-105 group"
             onClick={() => setIsSearching(true)}
           >
-            ← Назад към търсенето
+            <span className="z-10 relative">← Назад към търсенето</span>
+            <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+            <span className="absolute bottom-0 left-0 w-full h-1 bg-green-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+            <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
           </button>
         </div>
       ) : (
         <div>
           <h2 className="text-2xl font-bold mb-4">Няма намерени обяви.</h2>
           <button
-            className="mt-6 bg-green-500 text-white px-20 py-2 mx-auto rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-green-600 transition duration-300"
+            className="mt-6 bg-green-500 text-white px-20 py-2 mx-auto rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-green-600 transition duration-300 relative overflow-hidden group"
             onClick={() => setIsSearching(true)}
           >
-            ← Назад към търсенето
+            <span className="z-10">← Назад към търсенето</span>
+            <span className="absolute inset-0 bg-white opacity-20 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 origin-right"></span>
+            <span className="absolute left-0 -translate-x-full group-hover:translate-x-0 transition-all duration-300 ease-in-out">
+              ➔
+            </span>
           </button>
         </div>
       )}

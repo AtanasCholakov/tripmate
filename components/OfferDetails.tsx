@@ -1,4 +1,6 @@
-import { useSearchParams } from "react-router-dom";
+"use client";
+
+import { useSearchParams } from "next/navigation";
 import { db } from "../lib/firebase";
 import {
   doc,
@@ -8,13 +10,11 @@ import {
   query,
   where,
   getDocs,
-  updateDoc,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { auth } from "../lib/firebase"; // Импортираме auth от Firebase
+import { auth } from "../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
-// Дефинираме интерфейси за типовете
 interface Ad {
   start: string;
   end: string;
@@ -35,32 +35,27 @@ interface User {
 const OfferDetails = () => {
   const [ad, setAd] = useState<Ad | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [rating, setRating] = useState<number | null>(null); // Текущ рейтинг от потребителя
-  const [hasRated, setHasRated] = useState<boolean>(false); // Дали потребителят вече е гласувал
+  const [rating, setRating] = useState<number | null>(null);
+  const [hasRated, setHasRated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null); // Съхраняваме текущия потребител
-  const [hoveredRating, setHoveredRating] = useState<number | null>(null); // Съхраняваме рейтинга, върху който е мишката
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [hoveredRating, setHoveredRating] = useState<number | null>(null);
 
-  // Състояния за съобщенията
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const id = searchParams.get("id");
-  const uid = searchParams.get("uid"); // Извличаме `uid` от URL параметрите
+  const uid = searchParams.get("uid");
 
-  // Използваме onAuthStateChanged за да следим промени в състоянието на автентикацията
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        setCurrentUserId(user.uid); // Записваме UID на текущия потребител
+        setCurrentUserId(user.uid);
       } else {
-        setCurrentUserId(null); // Няма влезнал потребител
+        setCurrentUserId(null);
       }
     });
 
-    return () => unsubscribe(); // Отписване от слушателя при излизане
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -68,7 +63,6 @@ const OfferDetails = () => {
       try {
         setLoading(true);
 
-        // Зареждаме обявата по нейното ID
         if (id) {
           const adDoc = await getDoc(doc(db, "ads", id));
           if (adDoc.exists()) {
@@ -78,13 +72,11 @@ const OfferDetails = () => {
           }
         }
 
-        // Зареждаме данните за потребителя по неговото ID
         if (uid) {
           const userDoc = await getDoc(doc(db, "users", uid));
           if (userDoc.exists()) {
             setUser(userDoc.data() as User);
 
-            // Проверка дали текущият потребител вече е гласувал
             if (currentUserId) {
               const q = query(
                 collection(db, "ratings"),
@@ -109,28 +101,20 @@ const OfferDetails = () => {
     };
 
     fetchDetails();
-  }, [id, uid, currentUserId]); // Следим за промени в currentUserId
+  }, [id, uid, currentUserId]);
 
   const handleRating = async (value: number) => {
-    // Проверка дали потребителят вече е гласувал
     if (hasRated || !uid || !currentUserId) {
-      // Показваме съобщение за вече поставен рейтинг
-      setErrorMessage("Вече сте гласували!");
-      setTimeout(() => {
-        setErrorMessage(null); // Скриваме съобщението след 3 секунди
-      }, 3000);
       return;
     }
 
     try {
-      // Запазване на рейтинга в базата
       await addDoc(collection(db, "ratings"), {
         fromUserId: currentUserId,
         toUserId: uid,
         rating: value,
       });
 
-      // Обновяване на средния рейтинг
       const userRatingsQuery = query(
         collection(db, "ratings"),
         where("toUserId", "==", uid)
@@ -140,36 +124,31 @@ const OfferDetails = () => {
       const ratings = ratingsSnapshot.docs.map((doc) => doc.data().rating);
       const averageRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
 
-      // Актуализираме локалния рейтинг
       if (user) {
         setUser((prevUser) => ({
           ...prevUser!,
-          rating: averageRating, // Обновяваме рейтинга с новата стойност
+          rating: averageRating,
         }));
       }
 
       setHasRated(true);
       setRating(value);
-
-      // Показваме съобщение за успешен рейтинг
-      setSuccessMessage("Рейтингът е записан успешно!");
-
-      // Скриваме съобщението след 3 секунди
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
     } catch (err) {
       console.error("Грешка при поставяне на рейтинг:", err);
-      // Показваме съобщение за грешка, ако възникне нещо неочаквано
-      setErrorMessage("Възникна грешка при записване на рейтинга.");
-      setTimeout(() => {
-        setErrorMessage(null); // Скриваме съобщението след 3 секунди
-      }, 3000);
     }
   };
 
   if (loading) {
-    return <p>Зареждане на обявата...</p>;
+    return (
+      <div className="flex justify-center items-center py-10">
+        <div className="relative w-40 h-2 bg-gray-300 rounded-full">
+          <div className="absolute top-0 left-0 h-full bg-green-500 rounded-full animate-progressBar"></div>
+        </div>
+        <p className="ml-4 text-xl font-bold text-gray-600">
+          Зареждане на обявите...
+        </p>
+      </div>
+    );
   }
 
   if (error) {
@@ -198,7 +177,7 @@ const OfferDetails = () => {
         <div className="flex-1">
           <h2 className="text-yellow-500 text-lg font-bold">Начална точка</h2>
           <p className="text-gray-800 mb-4">{ad.start}</p>
-          {/* Останалите данни */}
+
           <h2 className="text-yellow-500 text-lg font-bold">Крайна точка</h2>
           <p className="text-gray-800 mb-4">{ad.end}</p>
 
@@ -261,12 +240,6 @@ const OfferDetails = () => {
               <p className="text-sm text-gray-600 mt-2">
                 Рейтинг: {user.rating.toFixed(1)}
               </p>
-              {successMessage && (
-                <p className="text-sm text-green-600 mt-2">{successMessage}</p>
-              )}
-              {errorMessage && (
-                <p className="text-sm text-red-600 mt-2">{errorMessage}</p>
-              )}
               <button className="mt-4 bg-green-500 text-white font-bold py-2 px-6 rounded-tr-xl rounded-bl-xl hover:bg-green-600 transition-all">
                 Изпрати съобщение
               </button>
