@@ -45,8 +45,11 @@ const Hero = () => {
             <h1 className="text-4xl font-bold">TripMate</h1>
             <p className="text-xl mt-2">Сподели пътя, намали емисиите!</p>
             <Link href="/register">
-              <button className="bg-green-500 text-white px-6 py-2 rounded-bl-xl rounded-tr-xl mt-4 text-lg font-bold">
-                Започни сега →
+              <button className="relative bg-green-500 text-white px-6 py-2 rounded-bl-xl rounded-tr-xl mt-4 text-lg font-bold overflow-hidden group">
+                <span className="relative z-10">Започни сега →</span>
+                <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+                <span className="absolute bottom-0 left-0 w-full h-1 bg-green-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+                <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
               </button>
             </Link>
           </div>

@@ -14,13 +14,13 @@ const Footer = () => {
             <a href="#" className="hover:underline">
               Начало
             </a>
-            <a href="#" className="hover:underline">
+            <a href="/about-us" className="hover:underline">
               За нас
             </a>
-            <a href="#" className="hover:underline">
+            <a href="/contact" className="hover:underline">
               Контакти
             </a>
-            <a href="#" className="hover:underline">
+            <a href="/faq" className="hover:underline">
               Често задавани въпроси
             </a>
           </nav>

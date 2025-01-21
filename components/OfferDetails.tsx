@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { db } from "../lib/firebase";
 import {
   doc,
@@ -10,10 +10,20 @@ import {
   query,
   where,
   getDocs,
+  Firestore,
+  serverTimestamp,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import {
+  Star,
+  MessageCircle,
+  Car,
+  Calendar,
+  Users,
+  MapPin,
+} from "lucide-react";
 
 interface Ad {
   start: string;
@@ -43,6 +53,7 @@ const OfferDetails = () => {
   const [hoveredRating, setHoveredRating] = useState<number | null>(null);
 
   const searchParams = useSearchParams();
+  const router = useRouter();
   const id = searchParams.get("id");
   const uid = searchParams.get("uid");
 
@@ -64,7 +75,8 @@ const OfferDetails = () => {
         setLoading(true);
 
         if (id) {
-          const adDoc = await getDoc(doc(db, "ads", id));
+          const adDocRef = doc(db as Firestore, "ads", id);
+          const adDoc = await getDoc(adDocRef);
           if (adDoc.exists()) {
             setAd(adDoc.data() as Ad);
           } else {
@@ -73,13 +85,15 @@ const OfferDetails = () => {
         }
 
         if (uid) {
-          const userDoc = await getDoc(doc(db, "users", uid));
+          const userDocRef = doc(db as Firestore, "users", uid);
+          const userDoc = await getDoc(userDocRef);
           if (userDoc.exists()) {
             setUser(userDoc.data() as User);
 
             if (currentUserId) {
+              const ratingsRef = collection(db, "ratings");
               const q = query(
-                collection(db, "ratings"),
+                ratingsRef,
                 where("fromUserId", "==", currentUserId),
                 where("toUserId", "==", uid)
               );
@@ -135,6 +149,35 @@ const OfferDetails = () => {
       setRating(value);
     } catch (err) {
       console.error("Грешка при поставяне на рейтинг:", err);
+    }
+  };
+
+  const handleStartChat = async () => {
+    if (!currentUserId || !uid) return;
+
+    try {
+      const chatsRef = collection(db, "chats");
+      const q = query(
+        chatsRef,
+        where("participants", "array-contains", currentUserId)
+      );
+      const querySnapshot = await getDocs(q);
+
+      let existingChatId = null;
+      querySnapshot.forEach((doc) => {
+        const chatData = doc.data();
+        if (chatData.participants.includes(uid)) {
+          existingChatId = doc.id;
+        }
+      });
+
+      if (existingChatId) {
+        router.push(`/chat?userId=${uid}`);
+      } else {
+        router.push(`/chat?userId=${uid}`);
+      }
+    } catch (error) {
+      console.error("Error starting chat:", error);
     }
   };
 
@@ -240,7 +283,11 @@ const OfferDetails = () => {
               <p className="text-sm text-gray-600 mt-2">
                 Рейтинг: {user.rating.toFixed(1)}
               </p>
-              <button className="mt-4 bg-green-500 text-white font-bold py-2 px-6 rounded-tr-xl rounded-bl-xl hover:bg-green-600 transition-all">
+              <button
+                className="mt-4 bg-green-500 text-white font-bold py-2 px-6 rounded-full hover:bg-green-600 transition-all flex items-center justify-center"
+                onClick={handleStartChat}
+              >
+                <MessageCircle className="mr-2" />
                 Изпрати съобщение
               </button>
             </>

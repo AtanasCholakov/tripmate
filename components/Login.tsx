@@ -100,12 +100,23 @@ const Login = ({ onSuccess }: { onSuccess: () => void }) => {
         )}
         <button
           type="submit"
-          className={`w-full bg-green-500 text-white font-bold py-3 rounded-bl-xl rounded-tr-xl hover:bg-green-600 transition ${
-            loading ? "bg-gray-400 cursor-not-allowed" : ""
+          className={`relative w-full bg-green-500 text-white font-bold py-3 rounded-bl-xl rounded-tr-xl overflow-hidden group ${
+            loading
+              ? "bg-gray-400 cursor-not-allowed"
+              : "hover:bg-green-600 transition"
           }`}
           disabled={loading}
         >
-          {loading ? "Logging in..." : "Log In"}
+          <span className="relative z-10">
+            {loading ? "Logging in..." : "Log In"}
+          </span>
+          {!loading && (
+            <>
+              <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+              <span className="absolute bottom-0 left-0 w-full h-1 bg-green-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+              <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
+            </>
+          )}
         </button>
       </form>
     </div>

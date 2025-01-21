@@ -49,27 +49,59 @@ const RatingComponent = ({
   rating: number;
   votes: number;
 }) => {
-  const fullStars = Math.floor(rating);
-  const halfStar = rating % 1 >= 0.5 ? 1 : 0;
-  const emptyStars = 5 - fullStars - halfStar;
+  const filledStars = Math.floor(rating);
+  const partialStar = rating % 1;
+  const emptyStars = 5 - filledStars - (partialStar > 0 ? 1 : 0);
 
   return (
     <div className="flex items-center space-x-2">
-      {[...Array(fullStars)].map((_, index) => (
-        <span key={index} className="text-yellow-400 text-2xl">
-          ★
-        </span>
-      ))}
-      {halfStar === 1 && <span className="text-yellow-400 text-2xl">☆</span>}
-      {[...Array(emptyStars)].map((_, index) => (
-        <span
-          key={index + fullStars + halfStar}
-          className="text-gray-300 text-2xl"
-        >
-          ☆
-        </span>
-      ))}
-      <span className="text-gray-600 text-base">({votes} гласа)</span>
+      <div className="flex">
+        {[...Array(filledStars)].map((_, i) => (
+          <svg
+            key={`star-${i}`}
+            className="w-6 h-6 text-yellow-400"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+        ))}
+        {partialStar > 0 && (
+          <svg
+            className="w-6 h-6 text-yellow-400"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <defs>
+              <linearGradient id="partialFill">
+                <stop
+                  offset={`${partialStar * 100}%`}
+                  stopColor="currentColor"
+                />
+                <stop offset={`${partialStar * 100}%`} stopColor="#D1D5DB" />
+              </linearGradient>
+            </defs>
+            <path
+              fill="url(#partialFill)"
+              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+            />
+          </svg>
+        )}
+        {[...Array(emptyStars)].map((_, i) => (
+          <svg
+            key={`empty-star-${i}`}
+            className="w-6 h-6 text-gray-300"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+        ))}
+      </div>
+      <span className="text-gray-700 font-semibold ml-2">
+        {rating.toFixed(1)}
+      </span>
+      <span className="text-gray-600 text-sm">({votes} гласа)</span>
     </div>
   );
 };
@@ -318,42 +350,56 @@ const ProfilePage = () => {
                   <img
                     src={user.profilePicture}
                     alt="Профилна снимка"
-                    className="w-28 h-28 rounded-full border-4 border-green-500"
+                    className="w-32 h-32 rounded-full object-cover border-4 border-green-500"
                   />
                 ) : (
-                  <div className="w-28 h-28 bg-gray-200 rounded-full text-gray-500 text-5xl flex items-center justify-center">
+                  <div className="w-32 h-32 bg-gray-200 rounded-full text-gray-500 text-6xl flex items-center justify-center">
                     👤
                   </div>
                 )}
                 <div>
-                  <h1 className="text-2xl font-semibold text-gray-800 mb-1">
+                  <h1 className="text-3xl font-bold text-gray-800 mb-2">
                     {user.name}
                   </h1>
-                  <p className="text-gray-600">{user.username}</p>
+                  <p className="text-xl text-gray-600 mb-1">@{user.username}</p>
                   <p className="text-gray-500">{user.email}</p>
                 </div>
               </div>
 
-              <RatingComponent rating={user.rating} votes={user.votes} />
+              <div className="mb-6">
+                <RatingComponent rating={user.rating} votes={user.votes} />
+              </div>
 
-              <div className="mt-6">
-                <h3 className="text-xl font-semibold text-gray-700 mb-4">
-                  Опции
-                </h3>
-                <div className="space-y-4">
-                  <button
-                    onClick={() => router.push("/profile/edit")}
-                    className="w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded-md text-sm text-center"
-                  >
+              <div className="bg-gray-100 rounded-lg p-4 mb-6">
+                <p className="text-gray-600">
+                  <span className="font-semibold">Регистриран на:</span>{" "}
+                  {user.createdAt}
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <button
+                  onClick={() => router.push("/profile-edit")}
+                  className="w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded-md text-sm text-center relative overflow-hidden hover:bg-yellow-600 transition-all duration-300 transform hover:scale-105 group focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                >
+                  <span className="z-10 text-lg relative">
                     Редактиране на профила
-                  </button>
-                  <button
-                    onClick={() => setShowPasswordModal(true)}
-                    className="w-full bg-red-500 text-white font-bold py-2 px-4 rounded-md text-sm text-center"
-                  >
+                  </span>
+                  <span className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+                  <span className="absolute bottom-0 left-0 w-full h-1 bg-yellow-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+                  <span className="absolute top-0 left-0 w-full h-full bg-yellow-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
+                </button>
+                <button
+                  onClick={() => setShowPasswordModal(true)}
+                  className="w-full bg-red-500 text-white font-bold py-2 px-4 rounded-md text-sm text-center relative overflow-hidden hover:bg-red-600 transition-all duration-300 transform hover:scale-105 group focus:outline-none focus:ring-2 focus:ring-red-400"
+                >
+                  <span className="z-10 text-lg relative">
                     Изтриване на профил
-                  </button>
-                </div>
+                  </span>
+                  <span className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+                  <span className="absolute bottom-0 left-0 w-full h-1 bg-red-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+                  <span className="absolute top-0 left-0 w-full h-full bg-red-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
+                </button>
               </div>
             </div>
           )}
@@ -387,28 +433,40 @@ const ProfilePage = () => {
       </div>
 
       {showPasswordModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-          <div className="bg-white p-8 rounded-lg shadow-lg w-96">
-            <h2 className="text-2xl font-bold mb-4">Потвърдете паролата си</h2>
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg w-96 max-w-md">
+            <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+              Потвърдете паролата си
+            </h2>
+            <p className="mb-4 text-center text-gray-600">
+              За да изтриете профила си, моля въведете паролата си за
+              потвърждение.
+            </p>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md mb-4"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md mb-6 focus:outline-none focus:ring-2 focus:ring-red-500"
               placeholder="Вашата парола"
             />
-            <div className="flex justify-between">
+            <div className="flex justify-between space-x-4">
               <button
                 onClick={() => setShowPasswordModal(false)}
-                className="w-1/2 bg-gray-300 py-2 rounded-md text-center text-gray-700"
+                className="w-1/2 bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md text-sm text-center relative overflow-hidden hover:bg-gray-400 transition-all duration-300 transform hover:scale-105 group focus:outline-none focus:ring-2 focus:ring-gray-400"
               >
-                Отказ
+                <span className="z-10 relative">Отказ</span>
+                <span className="absolute inset-0 bg-gradient-to-r from-gray-200 to-gray-400 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+                <span className="absolute bottom-0 left-0 w-full h-1 bg-gray-200 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+                <span className="absolute top-0 left-0 w-full h-full bg-gray-300 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
               </button>
               <button
                 onClick={handleDeleteProfile}
-                className="w-1/2 bg-red-500 py-2 rounded-md text-center text-white"
+                className="w-1/2 bg-red-500 text-white font-semibold py-2 px-4 rounded-md text-sm text-center relative overflow-hidden hover:bg-red-600 transition-all duration-300 transform hover:scale-105 group focus:outline-none focus:ring-2 focus:ring-red-400"
               >
-                Изтриване на профил
+                <span className="z-10 relative">Изтриване</span>
+                <span className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+                <span className="absolute bottom-0 left-0 w-full h-1 bg-red-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+                <span className="absolute top-0 left-0 w-full h-full bg-red-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
               </button>
             </div>
           </div>

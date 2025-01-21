@@ -142,10 +142,13 @@ const CreateAdForm = () => {
           />
           <button
             type="button"
-            className="bg-green-500 text-white px-20 py-2 mx-auto rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-green-600 transition mt-2"
+            className="relative px-20 py-2 mx-auto mt-2 text-lg font-bold text-white bg-green-500 rounded-bl-xl rounded-tr-xl overflow-hidden transition-all duration-300 ease-out hover:shadow-lg group"
             onClick={handleAddStop}
           >
-            Добави спирка
+            <span className="z-10 relative">Добави спирка</span>
+            <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+            <span className="absolute bottom-0 left-0 w-full h-1 bg-green-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+            <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
           </button>
           {stops.length > 0 && (
             <ul className="mt-4 space-y-2">
@@ -198,9 +201,12 @@ const CreateAdForm = () => {
         ></textarea>
         <button
           type="submit"
-          className="bg-green-500 text-white px-20 py-2 mx-auto rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-green-600 transition duration-300 col-span-2"
+          className="relative px-20 py-2 mx-auto text-lg font-bold text-white bg-green-500 rounded-bl-xl rounded-tr-xl overflow-hidden transition-all duration-300 ease-out hover:shadow-lg group col-span-2"
         >
-          Създай
+          <span className="z-10 relative">Създай</span>
+          <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+          <span className="absolute bottom-0 left-0 w-full h-1 bg-green-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+          <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
         </button>
       </form>
     </div>

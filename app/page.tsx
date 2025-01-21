@@ -103,7 +103,7 @@ function HomePageContent() {
   return (
     <>
       {!isLoggedIn && ( // Показва секцията само ако потребителят НЕ е влязъл
-        <section className="py-10 bg-gray-100">
+        <section className="py-10 bg-white">
           <h2 className="text-center text-3xl font-bold text-gray-800">
             Готови за път? Виж най-добрите оферти!
           </h2>
