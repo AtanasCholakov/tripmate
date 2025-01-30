@@ -1,17 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/router";
-import { auth } from "../lib/firebase";
+import { useRouter } from "next/navigation";
+import { auth, db } from "../lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { getDocs, query, collection, where } from "firebase/firestore";
-import { db } from "../lib/firebase"; // Път до Firestore конфигурацията
+import { motion } from "framer-motion";
 
-const Login = ({ onSuccess }: { onSuccess: () => void }) => {
+const Login = () => {
   const [usernameOrEmail, setUsernameOrEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,11 +27,9 @@ const Login = ({ onSuccess }: { onSuccess: () => void }) => {
 
     try {
       const isEmail = usernameOrEmail.includes("@");
+      let email = usernameOrEmail;
 
-      if (isEmail) {
-        // Log in with email and password
-        await signInWithEmailAndPassword(auth, usernameOrEmail, password);
-      } else {
+      if (!isEmail) {
         // Log in with username
         const userQuery = query(
           collection(db, "users"),
@@ -40,14 +39,7 @@ const Login = ({ onSuccess }: { onSuccess: () => void }) => {
 
         if (!userDocs.empty) {
           const userDoc = userDocs.docs[0];
-          const userId = userDoc.id; // Get user ID from Firestore
-
-          // Log in using email from Firestore
-          await signInWithEmailAndPassword(
-            auth,
-            userDoc.data().email, // Get email from Firestore
-            password
-          );
+          email = userDoc.data().email;
         } else {
           setErrorMessage("User with this username not found.");
           setLoading(false);
@@ -55,7 +47,21 @@ const Login = ({ onSuccess }: { onSuccess: () => void }) => {
         }
       }
 
-      onSuccess(); // Redirect to home page after successful login
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential.user;
+
+      if (!user.emailVerified) {
+        await auth.signOut();
+        setErrorMessage("Please verify your email before logging in.");
+        setLoading(false);
+        return;
+      }
+
+      router.push("/"); // Redirect to home page after successful login
     } catch (error: any) {
       console.error("Login error:", error);
       if (error.code === "auth/invalid-email") {
@@ -73,7 +79,12 @@ const Login = ({ onSuccess }: { onSuccess: () => void }) => {
   };
 
   return (
-    <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-lg">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="bg-white shadow-lg rounded-lg p-8 w-full max-w-lg"
+    >
       <h1 className="text-center text-2xl font-bold mb-6">Log In</h1>
       <form onSubmit={handleLogin} className="flex flex-col space-y-4">
         <input
@@ -98,7 +109,9 @@ const Login = ({ onSuccess }: { onSuccess: () => void }) => {
         {errorMessage && (
           <div className="text-red-500 text-sm">{errorMessage}</div>
         )}
-        <button
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           type="submit"
           className={`relative w-full bg-green-500 text-white font-bold py-3 rounded-bl-xl rounded-tr-xl overflow-hidden group ${
             loading
@@ -117,9 +130,9 @@ const Login = ({ onSuccess }: { onSuccess: () => void }) => {
               <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
             </>
           )}
-        </button>
+        </motion.button>
       </form>
-    </div>
+    </motion.div>
   );
 };
 

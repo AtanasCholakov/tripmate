@@ -10,7 +10,7 @@ import {
   query,
   where,
   getDocs,
-  Firestore,
+  type Firestore,
   serverTimestamp,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
@@ -24,6 +24,7 @@ import {
   Users,
   MapPin,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Ad {
   start: string;
@@ -51,6 +52,7 @@ const OfferDetails = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [hoveredRating, setHoveredRating] = useState<number | null>(null);
+  const [ratingMessage, setRatingMessage] = useState<string | null>(null);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -119,6 +121,8 @@ const OfferDetails = () => {
 
   const handleRating = async (value: number) => {
     if (hasRated || !uid || !currentUserId) {
+      setRatingMessage("Вече сте гласували");
+      setTimeout(() => setRatingMessage(null), 2000);
       return;
     }
 
@@ -147,8 +151,12 @@ const OfferDetails = () => {
 
       setHasRated(true);
       setRating(value);
+      setRatingMessage("Гласът ви е записан");
+      setTimeout(() => setRatingMessage(null), 2000);
     } catch (err) {
       console.error("Грешка при поставяне на рейтинг:", err);
+      setRatingMessage("Грешка при гласуване");
+      setTimeout(() => setRatingMessage(null), 2000);
     }
   };
 
@@ -212,62 +220,144 @@ const OfferDetails = () => {
   });
 
   return (
-    <div className="bg-white shadow-lg rounded-lg p-10 max-w-5xl mx-auto my-10 relative">
-      <div className="absolute bottom-4 right-4 text-sm text-gray-500">
+    <div className="bg-white shadow-lg rounded-lg p-10 max-w-5xl mx-auto my-10 relative overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="absolute top-0 left-0 w-full h-2 bg-green-500"
+      />
+      <div className="absolute bottom-4 right-4 text-sm text-gray-500 z-10">
         Създадено на: {formattedDate}
       </div>
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row gap-8 relative z-20">
         <div className="flex-1">
-          <h2 className="text-yellow-500 text-lg font-bold">Начална точка</h2>
-          <p className="text-gray-800 mb-4">{ad.start}</p>
+          <motion.h2
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-yellow-500 text-2xl font-bold mb-6"
+          >
+            Детайли за пътуването
+          </motion.h2>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-gray-50 p-6 rounded-lg shadow-md mb-6"
+          >
+            <div className="flex items-center mb-4">
+              <MapPin className="text-green-500 mr-2" />
+              <h3 className="text-lg font-semibold">Начална и крайна точка</h3>
+            </div>
+            <p className="text-gray-800 mb-2">От: {ad.start}</p>
+            <p className="text-gray-800">До: {ad.end}</p>
+          </motion.div>
 
-          <h2 className="text-yellow-500 text-lg font-bold">Крайна точка</h2>
-          <p className="text-gray-800 mb-4">{ad.end}</p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="bg-gray-50 p-6 rounded-lg shadow-md mb-6"
+          >
+            <div className="flex items-center mb-4">
+              <Calendar className="text-green-500 mr-2" />
+              <h3 className="text-lg font-semibold">Дата на пътуването</h3>
+            </div>
+            <p className="text-gray-800">{ad.date}</p>
+          </motion.div>
 
-          <h2 className="text-yellow-500 text-lg font-bold">
-            Дата на пътуването
-          </h2>
-          <p className="text-gray-800 mb-4">{ad.date}</p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="bg-gray-50 p-6 rounded-lg shadow-md mb-6"
+          >
+            <div className="flex items-center mb-4">
+              <Users className="text-green-500 mr-2" />
+              <h3 className="text-lg font-semibold">Свободни места</h3>
+            </div>
+            <p className="text-gray-800">{ad.seats}</p>
+          </motion.div>
 
-          <h2 className="text-yellow-500 text-lg font-bold">Свободни места</h2>
-          <p className="text-gray-800 mb-4">{ad.seats}</p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="bg-gray-50 p-6 rounded-lg shadow-md mb-6"
+          >
+            <div className="flex items-center mb-4">
+              <Car className="text-green-500 mr-2" />
+              <h3 className="text-lg font-semibold">Автомобил</h3>
+            </div>
+            <p className="text-gray-800">{ad.car || "Не е посочен"}</p>
+          </motion.div>
 
-          <h2 className="text-yellow-500 text-lg font-bold">Автомобил</h2>
-          <p className="text-gray-800 mb-4">{ad.car || "Не е посочен"}</p>
+          {ad.description && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+              className="bg-gray-50 p-6 rounded-lg shadow-md mb-6"
+            >
+              <h3 className="text-lg font-semibold mb-2">Описание</h3>
+              <p className="text-gray-800">{ad.description}</p>
+            </motion.div>
+          )}
 
-          <h2 className="text-yellow-500 text-lg font-bold">Описание</h2>
-          <p className="text-gray-800 mb-4">
-            {ad.description || "Не е посочено"}
-          </p>
-
-          <h2 className="text-yellow-500 text-lg font-bold">Спирки</h2>
-          <ul className="text-gray-800 list-disc ml-5">
-            {ad.stops && ad.stops.length > 0
-              ? ad.stops.map((stop, index) => (
+          {ad.stops && ad.stops.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.7 }}
+              className="bg-gray-50 p-6 rounded-lg shadow-md"
+            >
+              <h3 className="text-lg font-semibold mb-2">Спирки</h3>
+              <ul className="text-gray-800 list-disc ml-5">
+                {ad.stops.map((stop, index) => (
                   <li key={index} className="mb-2">
                     {stop}
                   </li>
-                ))
-              : "Няма добавени спирки"}
-          </ul>
+                ))}
+              </ul>
+            </motion.div>
+          )}
         </div>
 
         <div className="flex-shrink-0 w-full lg:w-72 flex flex-col items-center bg-gray-50 p-6 rounded-lg shadow-md">
           {user ? (
             <>
-              <div className="w-32 h-32 rounded-full border-2 border-yellow-500 flex items-center justify-center text-gray-500 text-6xl">
-                👤
-              </div>
-              <h3 className="text-gray-800 text-xl font-bold mt-4">
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="w-32 h-32 rounded-full border-2 border-yellow-500 flex items-center justify-center text-gray-500 text-6xl overflow-hidden"
+              >
+                {user.profilePicture ? (
+                  <img
+                    src={user.profilePicture || "/placeholder.svg"}
+                    alt={user.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>👤</span>
+                )}
+              </motion.div>
+              <motion.h3
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="text-gray-800 text-xl font-bold mt-4"
+              >
                 {user.name}
-              </h3>
-              <div className="flex items-center mt-2">
+              </motion.h3>
+              <div className="flex items-center mt-2 relative">
                 {Array(5)
                   .fill(null)
                   .map((_, index) => (
-                    <span
+                    <motion.span
                       key={index}
-                      className={`text-lg cursor-pointer ${
+                      className={`text-2xl cursor-pointer ${
                         index < (hoveredRating ?? Math.round(user.rating))
                           ? "text-yellow-500"
                           : "text-gray-300"
@@ -275,21 +365,40 @@ const OfferDetails = () => {
                       onClick={() => handleRating(index + 1)}
                       onMouseEnter={() => setHoveredRating(index + 1)}
                       onMouseLeave={() => setHoveredRating(null)}
+                      whileHover={{ scale: 1.2 }}
+                      whileTap={{ scale: 0.9 }}
                     >
                       ★
-                    </span>
+                    </motion.span>
                   ))}
+                <AnimatePresence>
+                  {ratingMessage && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute -bottom-8 left-0 right-0 text-center text-sm text-green-500 bg-white px-2 py-1 rounded-full shadow-md"
+                    >
+                      {ratingMessage}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               <p className="text-sm text-gray-600 mt-2">
                 Рейтинг: {user.rating.toFixed(1)}
               </p>
-              <button
+              <motion.button
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
                 className="mt-4 bg-green-500 text-white font-bold py-2 px-6 rounded-full hover:bg-green-600 transition-all flex items-center justify-center"
                 onClick={handleStartChat}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <MessageCircle className="mr-2" />
                 Изпрати съобщение
-              </button>
+              </motion.button>
             </>
           ) : (
             <p className="text-gray-800 mb-4">

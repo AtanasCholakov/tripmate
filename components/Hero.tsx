@@ -1,27 +1,28 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { auth } from "../lib/firebase"; // Уверете се, че е правилният път
+import { auth } from "../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import CreateAdForm from "@/components/CreateAdForm";
 import SearchAdForm from "@/components/SearchAdForm";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 const Hero = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activeSection, setActiveSection] = useState("none"); // Управление на активната секция
+  const [activeSection, setActiveSection] = useState("search");
 
   useEffect(() => {
-    // Проверка дали потребителят е влязъл
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        setIsLoggedIn(true); // Потребителят е влязъл
+        setIsLoggedIn(true);
+        setActiveSection("search");
       } else {
-        setIsLoggedIn(false); // Потребителят не е влязъл
+        setIsLoggedIn(false);
+        setActiveSection("none");
       }
     });
 
-    // Почисти подписката при демонтиране на компонента
     return () => unsubscribe();
   }, []);
 
@@ -31,47 +32,86 @@ const Hero = () => {
     } else if (activeSection === "search") {
       return <SearchAdForm />;
     }
-    return null; // Ако няма активна секция, нищо не се показва
+    return null;
   };
 
   return (
-    <div>
+    <div className="bg-white min-h-screen">
       {!isLoggedIn ? (
-        <div
-          className="relative h-[400px] bg-cover bg-center"
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+          className="relative h-[600px] bg-cover bg-center"
           style={{ backgroundImage: "url('/images/hero-image.png')" }}
         >
-          <div className="absolute inset-0 bg-black bg-opacity-30 flex flex-col justify-center items-center text-center text-white">
-            <h1 className="text-4xl font-bold">TripMate</h1>
-            <p className="text-xl mt-2">Сподели пътя, намали емисиите!</p>
-            <Link href="/register">
-              <button className="relative bg-green-500 text-white px-6 py-2 rounded-bl-xl rounded-tr-xl mt-4 text-lg font-bold overflow-hidden group">
-                <span className="relative z-10">Започни сега →</span>
-                <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
-                <span className="absolute bottom-0 left-0 w-full h-1 bg-green-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
-                <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
-              </button>
-            </Link>
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center items-center text-center text-white">
+            <motion.h1
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.8 }}
+              className="text-6xl font-bold mb-4"
+            >
+              TripMate
+            </motion.h1>
+            <motion.p
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.8 }}
+              className="text-2xl mb-8"
+            >
+              Сподели пътя, намали емисиите!
+            </motion.p>
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.6, duration: 0.8 }}
+            >
+              <Link href="/register">
+                <button className="bg-green-500 text-white px-8 py-3 rounded-full text-xl font-bold hover:bg-green-600 transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50">
+                  Започни сега →
+                </button>
+              </Link>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       ) : (
-        <div className="p-5">
-          <div className="flex justify-center gap-4 mb-8 mt-5">
+        <div className="container mx-auto px-4 py-8 mt-3">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex justify-center gap-4 mb-8"
+          >
             <button
-              className="bg-green-500 text-white px-6 py-2 rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-green-600 transition duration-300"
+              className={`px-6 py-3 rounded-full text-lg font-bold transition duration-300 ${
+                activeSection === "search"
+                  ? "bg-green-500 text-white"
+                  : "bg-white text-green-500 hover:bg-green-100"
+              }`}
               onClick={() => setActiveSection("search")}
             >
               Търсене на обява
             </button>
             <button
-              className="bg-white text-black px-6 py-2 rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-gray-100 transition duration-300 border border-black"
+              className={`px-6 py-3 rounded-full text-lg font-bold transition duration-300 ${
+                activeSection === "create"
+                  ? "bg-green-500 text-white"
+                  : "bg-white text-green-500 hover:bg-green-100"
+              }`}
               onClick={() => setActiveSection("create")}
             >
               Създаване на обява
             </button>
-          </div>
+          </motion.div>
 
-          <div className="mt-8">{renderActiveSection()}</div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            {renderActiveSection()}
+          </motion.div>
         </div>
       )}
     </div>

@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "../lib/firebase";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  updateProfile,
+} from "firebase/auth";
 import { setDoc, doc } from "firebase/firestore";
+import { motion } from "framer-motion";
 
 interface FormData {
   name: string;
@@ -63,15 +68,18 @@ const Register = () => {
 
       // Save user data to Firestore
       await setDoc(doc(db, "users", user.uid), {
-        name, // Save the user's full name
+        name,
         username,
         email,
-        rating: 0, // Initial rating
-        createdAt: new Date(), // Profile creation timestamp
+        rating: 0,
+        createdAt: new Date(),
       });
 
-      // Redirect to home page
-      router.push("/");
+      // Send verification email
+      await sendEmailVerification(user);
+
+      // Redirect to a confirmation page
+      router.push("/register-confirmation");
     } catch (error: any) {
       console.error("Error during registration:", error);
       setError("Registration failed. Please try again.");
@@ -81,11 +89,17 @@ const Register = () => {
   };
 
   return (
-    <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-3xl">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="bg-white shadow-lg rounded-lg p-8 w-full max-w-3xl"
+    >
       <h1 className="text-center text-2xl font-bold mb-6">Create Profile</h1>
       {error && <p className="text-red-500 text-center mb-4">{error}</p>}
       <form className="flex flex-col space-y-4 w-full" onSubmit={handleSubmit}>
-        <input
+        <motion.input
+          whileFocus={{ scale: 1.05 }}
           type="text"
           name="name"
           value={formData.name}
@@ -94,7 +108,8 @@ const Register = () => {
           className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         />
-        <input
+        <motion.input
+          whileFocus={{ scale: 1.05 }}
           type="text"
           name="username"
           value={formData.username}
@@ -103,7 +118,8 @@ const Register = () => {
           className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         />
-        <input
+        <motion.input
+          whileFocus={{ scale: 1.05 }}
           type="email"
           name="email"
           value={formData.email}
@@ -112,7 +128,8 @@ const Register = () => {
           className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         />
-        <input
+        <motion.input
+          whileFocus={{ scale: 1.05 }}
           type="password"
           name="password"
           value={formData.password}
@@ -121,7 +138,8 @@ const Register = () => {
           className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         />
-        <input
+        <motion.input
+          whileFocus={{ scale: 1.05 }}
           type="password"
           name="confirmPassword"
           value={formData.confirmPassword}
@@ -130,7 +148,9 @@ const Register = () => {
           className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         />
-        <button
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           type="submit"
           disabled={loading}
           className={`relative w-full text-white font-bold py-3 rounded-bl-xl rounded-tr-xl overflow-hidden group ${
@@ -149,9 +169,9 @@ const Register = () => {
               <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
             </>
           )}
-        </button>
+        </motion.button>
       </form>
-    </div>
+    </motion.div>
   );
 };
 
