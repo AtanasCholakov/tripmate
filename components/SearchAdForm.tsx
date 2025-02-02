@@ -8,7 +8,6 @@ import {
   query,
   where,
   getDocs,
-  orderBy,
   limit,
   getDoc,
   doc,
@@ -21,19 +20,33 @@ const SearchAdForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [start, setStart] = useState(searchParams.get("start") || "");
-  const [end, setEnd] = useState(searchParams.get("end") || "");
-  const [date, setDate] = useState(searchParams.get("date") || "");
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
+  const [date, setDate] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [topRatedAds, setTopRatedAds] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  useEffect(() => {
+    const savedSearch = JSON.parse(localStorage.getItem("savedSearch") || "{}");
+    if (savedSearch.start) setStart(savedSearch.start);
+    if (savedSearch.end) setEnd(savedSearch.end);
+    if (savedSearch.date) setDate(savedSearch.date);
+    if (Object.keys(savedSearch).length > 0) {
+      setHasSearched(true);
+      fetchAds(savedSearch);
+    } else {
+      fetchTopRatedAds();
+    }
+  }, []);
 
   const fetchTopRatedAds = async () => {
     try {
       const adsRef = collection(db, "ads");
-      const q = query(adsRef, limit(9)); // Fetch more ads initially
+      const q = query(adsRef, limit(9));
       const querySnapshot = await getDocs(q);
 
       const adsWithUserRatings = await Promise.all(
@@ -51,7 +64,7 @@ const SearchAdForm = () => {
 
       const sortedAds = adsWithUserRatings
         .sort((a, b) => b.userRating - a.userRating)
-        .slice(0, 3); // Get top 3 ads
+        .slice(0, 3);
 
       setTopRatedAds(sortedAds);
     } catch (error) {
@@ -59,20 +72,26 @@ const SearchAdForm = () => {
     }
   };
 
-  useEffect(() => {
-    fetchTopRatedAds();
-  }, []);
-
-  const fetchAds = async () => {
+  const fetchAds = async (searchParams: {
+    start?: string;
+    end?: string;
+    date?: string;
+  }) => {
     setLoading(true);
     try {
       const adsRef = collection(db, "ads");
       const constraints = [];
 
-      if (start)
-        constraints.push(where("startLower", "==", start.toLowerCase()));
-      if (end) constraints.push(where("endLower", "==", end.toLowerCase()));
-      if (date) constraints.push(where("date", "==", date));
+      if (searchParams.start)
+        constraints.push(
+          where("startLower", "==", searchParams.start.toLowerCase())
+        );
+      if (searchParams.end)
+        constraints.push(
+          where("endLower", "==", searchParams.end.toLowerCase())
+        );
+      if (searchParams.date)
+        constraints.push(where("date", "==", searchParams.date));
 
       const q = query(adsRef, ...constraints);
       const querySnapshot = await getDocs(q);
@@ -103,18 +122,12 @@ const SearchAdForm = () => {
     }
   };
 
-  useEffect(() => {
-    fetchAds();
-  }, [start, end, date]);
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push(
-      `/?start=${encodeURIComponent(start)}&end=${encodeURIComponent(
-        end
-      )}&date=${encodeURIComponent(date)}`
-    );
-    fetchAds();
+    setHasSearched(true);
+    const searchParams = { start, end, date };
+    localStorage.setItem("savedSearch", JSON.stringify(searchParams));
+    fetchAds(searchParams);
   };
 
   const paginatedResults = results.slice(
@@ -182,7 +195,7 @@ const SearchAdForm = () => {
         </form>
       </motion.div>
 
-      {topRatedAds.length > 0 && (
+      {!hasSearched && topRatedAds.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -210,59 +223,65 @@ const SearchAdForm = () => {
         </motion.div>
       )}
 
-      {loading ? (
-        <div className="text-center py-10">
-          <p className="text-xl font-bold text-gray-600">
-            Зареждане на обявите...
-          </p>
-        </div>
-      ) : results.length > 0 ? (
+      {hasSearched && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.4 }}
           className="mt-16"
         >
-          <h3 className="text-2xl font-bold mb-6 text-center text-yellow-500">
-            Намерени обяви
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {paginatedResults.map((ad) => (
-              <OfferCard
-                key={ad.id}
-                docId={ad.id}
-                id={ad.userId}
-                start={ad.start}
-                end={ad.end}
-                date={ad.date}
-                seats={ad.seats}
-                car={ad.car}
-                description={ad.description}
-              />
-            ))}
-          </div>
-          <div className="flex justify-center mt-8 space-x-2">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-4 py-2 rounded-lg ${
-                  currentPage === page
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                } transition duration-300`}
-              >
-                {page}
-              </button>
-            ))}
-          </div>
+          {loading ? (
+            <div className="text-center py-10">
+              <p className="text-xl font-bold text-gray-600">
+                Зареждане на обявите...
+              </p>
+            </div>
+          ) : results.length > 0 ? (
+            <>
+              <h3 className="text-2xl font-bold mb-6 text-center text-yellow-500">
+                Намерени обяви
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {paginatedResults.map((ad) => (
+                  <OfferCard
+                    key={ad.id}
+                    docId={ad.id}
+                    id={ad.userId}
+                    start={ad.start}
+                    end={ad.end}
+                    date={ad.date}
+                    seats={ad.seats}
+                    car={ad.car}
+                    description={ad.description}
+                  />
+                ))}
+              </div>
+              <div className="flex justify-center mt-8 space-x-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-4 py-2 rounded-lg ${
+                        currentPage === page
+                          ? "bg-green-500 text-white"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      } transition duration-300`}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-10 mt-16">
+              <p className="text-xl font-bold text-gray-600">
+                Няма намерени обяви.
+              </p>
+            </div>
+          )}
         </motion.div>
-      ) : (
-        <div className="text-center py-10 mt-16">
-          <p className="text-xl font-bold text-gray-600">
-            Няма намерени обяви.
-          </p>
-        </div>
       )}
     </div>
   );

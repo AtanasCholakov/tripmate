@@ -2,9 +2,22 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { auth, db } from "../lib/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { getDocs, query, collection, where } from "firebase/firestore";
+import {
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "firebase/auth";
+import {
+  getDocs,
+  query,
+  collection,
+  where,
+  doc,
+  setDoc,
+  getDoc,
+} from "firebase/firestore";
 import { motion } from "framer-motion";
 
 const Login = () => {
@@ -20,7 +33,7 @@ const Login = () => {
     setLoading(true);
 
     if (!usernameOrEmail || !password) {
-      setErrorMessage("Please fill in all fields.");
+      setErrorMessage("Моля попълнете всички полета!");
       setLoading(false);
       return;
     }
@@ -41,7 +54,7 @@ const Login = () => {
           const userDoc = userDocs.docs[0];
           email = userDoc.data().email;
         } else {
-          setErrorMessage("User with this username not found.");
+          setErrorMessage("Потребителят не е намерен!");
           setLoading(false);
           return;
         }
@@ -56,25 +69,69 @@ const Login = () => {
 
       if (!user.emailVerified) {
         await auth.signOut();
-        setErrorMessage("Please verify your email before logging in.");
+        setErrorMessage("Моля потвърдете имейл адреса си!");
         setLoading(false);
         return;
       }
 
-      router.push("/"); // Redirect to home page after successful login
+      window.location.href = "/";
     } catch (error: any) {
       console.error("Login error:", error);
-      if (error.code === "auth/invalid-email") {
-        setErrorMessage("Invalid email address.");
-      } else if (error.code === "auth/wrong-password") {
-        setErrorMessage("Wrong password.");
-      } else if (error.code === "auth/user-not-found") {
-        setErrorMessage("User not found.");
-      } else {
-        setErrorMessage(error.message || "Error during login.");
-      }
+      setErrorMessage(getErrorMessage(error));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setErrorMessage("");
+    setLoading(true);
+
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Check if the user already exists in Firestore
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+
+      if (!userDoc.exists()) {
+        // Save user data to Firestore only if it doesn't exist
+        await setDoc(doc(db, "users", user.uid), {
+          name: user.displayName,
+          username: user.email?.split("@")[0], // Use email as username
+          email: user.email,
+          rating: 0,
+          createdAt: new Date(),
+          emailVerified: true, // Google accounts are automatically verified
+        });
+      }
+
+      window.location.href = "/";
+    } catch (error: any) {
+      console.error("Google sign-in error:", error);
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getErrorMessage = (error: any): string => {
+    switch (error.code) {
+      case "auth/invalid-email":
+        return "Невалиден имейл адрес!";
+      case "auth/wrong-password":
+        return "Грешна парола!";
+      case "auth/invalid-credential":
+        return "Входните данни са невалидни!";
+      case "auth/user-not-found":
+        return "Потребителят не е намерен!";
+      case "auth/popup-closed-by-user":
+        return "Прозорецът за вход беше затворен. Моля, опитайте отново.";
+      case "auth/operation-not-allowed":
+        return "Този метод за вход не е разрешен. Моля, свържете се с поддръжката.";
+      default:
+        return error.message || "Грешка при влизане.";
     }
   };
 
@@ -85,11 +142,11 @@ const Login = () => {
       transition={{ duration: 0.5 }}
       className="bg-white shadow-lg rounded-lg p-8 w-full max-w-lg"
     >
-      <h1 className="text-center text-2xl font-bold mb-6">Log In</h1>
+      <h1 className="text-center text-2xl font-bold mb-6">Влизане в профил</h1>
       <form onSubmit={handleLogin} className="flex flex-col space-y-4">
         <input
           type="text"
-          placeholder="Email or Username"
+          placeholder="Потребителско име или имейл"
           className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
           value={usernameOrEmail}
           onChange={(e) => setUsernameOrEmail(e.target.value)}
@@ -97,7 +154,7 @@ const Login = () => {
         <div className="relative">
           <input
             type="password"
-            placeholder="Password"
+            placeholder="Парола"
             className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -106,6 +163,12 @@ const Login = () => {
             👁
           </span>
         </div>
+        <Link
+          href="/forgot-password"
+          className="text-sm text-green-500 hover:underline self-end"
+        >
+          Забравена парола?
+        </Link>
         {errorMessage && (
           <div className="text-red-500 text-sm">{errorMessage}</div>
         )}
@@ -121,7 +184,7 @@ const Login = () => {
           disabled={loading}
         >
           <span className="relative z-10">
-            {loading ? "Logging in..." : "Log In"}
+            {loading ? "Влизане..." : "Вход"}
           </span>
           {!loading && (
             <>
@@ -132,6 +195,24 @@ const Login = () => {
           )}
         </motion.button>
       </form>
+      <div className="mt-4">
+        <p className="text-center">или</p>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleGoogleSignIn}
+          disabled={loading}
+          className="w-full bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-lg mt-2 hover:bg-gray-100 transition"
+        >
+          Вход с Google
+        </motion.button>
+      </div>
+      <p className="text-center mt-4">
+        Нямаш акаунт?{" "}
+        <Link href="/register" className="text-green-500 hover:underline">
+          Регистрирай се тук
+        </Link>
+      </p>
     </motion.div>
   );
 };

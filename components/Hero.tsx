@@ -36,7 +36,7 @@ const Hero = () => {
   };
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white">
       {!isLoggedIn ? (
         <motion.div
           initial={{ opacity: 0 }}

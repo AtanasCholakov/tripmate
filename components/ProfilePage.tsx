@@ -13,7 +13,6 @@ import {
   where,
   getDocs,
   deleteDoc,
-  updateDoc,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -348,7 +347,7 @@ const ProfilePage = () => {
               <div className="flex items-center space-x-6 mb-6">
                 {user.profilePicture ? (
                   <img
-                    src={user.profilePicture}
+                    src={user.profilePicture || "/placeholder.svg"}
                     alt="Профилна снимка"
                     className="w-32 h-32 rounded-full object-cover border-4 border-green-500"
                   />
@@ -405,7 +404,7 @@ const ProfilePage = () => {
           )}
 
           {selectedTab === "ads" && (
-            <div className="bg-white shadow rounded-lg p-8">
+            <div className="bg-white shadow rounded-lg p-8 min-h-[500px]">
               <h2 className="text-xl font-semibold text-gray-700 mb-4">
                 Моите обяви
               </h2>
@@ -414,6 +413,7 @@ const ProfilePage = () => {
                   <OfferCard
                     key={ad.docId}
                     docId={ad.docId}
+                    id={ad.id}
                     start={ad.start}
                     end={ad.end}
                     date={ad.date}
@@ -425,7 +425,18 @@ const ProfilePage = () => {
                   />
                 ))
               ) : (
-                <p className="text-gray-500">Нямате обяви.</p>
+                <div className="flex flex-col items-center justify-center h-[400px]">
+                  <p className="text-gray-500 text-lg mb-4">Нямате обяви.</p>
+                  <button
+                    onClick={() => (window.location.href = "/")}
+                    className="relative overflow-hidden bg-green-500 text-white font-bold py-2 px-6 mx-10 rounded-md text-xl text-center hover:bg-green-600 transition-all duration-300 group"
+                  >
+                    <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+                    <span className="absolute bottom-0 left-0 w-full h-1 bg-green-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+                    <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
+                    Създай нова обява
+                  </button>
+                </div>
               )}
             </div>
           )}

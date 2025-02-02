@@ -2,13 +2,16 @@
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { auth, db } from "../lib/firebase";
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
-import { setDoc, doc } from "firebase/firestore";
+import { setDoc, doc, getDoc } from "firebase/firestore"; // Added getDoc import
 import { motion } from "framer-motion";
 
 interface FormData {
@@ -73,6 +76,7 @@ const Register = () => {
         email,
         rating: 0,
         createdAt: new Date(),
+        emailVerified: false,
       });
 
       // Send verification email
@@ -82,9 +86,60 @@ const Register = () => {
       router.push("/register-confirmation");
     } catch (error: any) {
       console.error("Error during registration:", error);
-      setError("Registration failed. Please try again.");
+      setError(getErrorMessage(error));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setLoading(true);
+
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Check if the user already exists in Firestore
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+
+      if (!userDoc.exists()) {
+        // Save user data to Firestore only if it doesn't exist
+        await setDoc(doc(db, "users", user.uid), {
+          name: user.displayName,
+          username: user.email?.split("@")[0], // Use email as username
+          email: user.email,
+          rating: 0,
+          createdAt: new Date(),
+          emailVerified: true, // Google accounts are automatically verified
+        });
+      }
+
+      // Redirect to home page or dashboard
+      window.location.href = "/";
+    } catch (error: any) {
+      console.error("Грешка при влизане с Google:", error);
+      setError(getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getErrorMessage = (error: any): string => {
+    switch (error.code) {
+      case "auth/email-already-in-use":
+        return "Този имейл вече е регистриран. Моля, опитайте да влезете.";
+      case "auth/invalid-email":
+        return "Невалиден имейл адрес. Моля, проверете и опитайте отново.";
+      case "auth/weak-password":
+        return "Паролата е твърде слаба. Моля, използвайте по-силна парола.";
+      case "auth/operation-not-allowed":
+        return "Този метод за вход не е позволен. Моля, свържете се с поддръжката.";
+      case "auth/popup-closed-by-user":
+        return "Прозорецът за вход беше затворен. Моля, опитайте отново.";
+      default:
+        return "Възникна грешка при регистрацията. Моля, опитайте отново.";
     }
   };
 
@@ -95,7 +150,9 @@ const Register = () => {
       transition={{ duration: 0.5 }}
       className="bg-white shadow-lg rounded-lg p-8 w-full max-w-3xl"
     >
-      <h1 className="text-center text-2xl font-bold mb-6">Create Profile</h1>
+      <h1 className="text-center text-2xl font-bold mb-6">
+        Създаване на профил
+      </h1>
       {error && <p className="text-red-500 text-center mb-4">{error}</p>}
       <form className="flex flex-col space-y-4 w-full" onSubmit={handleSubmit}>
         <motion.input
@@ -103,7 +160,7 @@ const Register = () => {
           type="text"
           name="name"
           value={formData.name}
-          placeholder="Name"
+          placeholder="Име"
           onChange={handleInputChange}
           className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
           required
@@ -113,7 +170,7 @@ const Register = () => {
           type="text"
           name="username"
           value={formData.username}
-          placeholder="Username"
+          placeholder="Потребителско име"
           onChange={handleInputChange}
           className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
           required
@@ -123,7 +180,7 @@ const Register = () => {
           type="email"
           name="email"
           value={formData.email}
-          placeholder="Email"
+          placeholder="Имейл"
           onChange={handleInputChange}
           className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
           required
@@ -133,7 +190,7 @@ const Register = () => {
           type="password"
           name="password"
           value={formData.password}
-          placeholder="Password"
+          placeholder="Парола"
           onChange={handleInputChange}
           className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
           required
@@ -143,7 +200,7 @@ const Register = () => {
           type="password"
           name="confirmPassword"
           value={formData.confirmPassword}
-          placeholder="Confirm Password"
+          placeholder="Потвърди паролата"
           onChange={handleInputChange}
           className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
           required
@@ -160,7 +217,7 @@ const Register = () => {
           }`}
         >
           <span className="relative z-10">
-            {loading ? "Registering..." : "Register"}
+            {loading ? "Регистриране..." : "Регистрация"}
           </span>
           {!loading && (
             <>
@@ -171,6 +228,24 @@ const Register = () => {
           )}
         </motion.button>
       </form>
+      <div className="mt-4">
+        <p className="text-center">или</p>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleGoogleSignIn}
+          disabled={loading}
+          className="w-full bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-lg mt-2 hover:bg-gray-100 transition"
+        >
+          Регистрация с Google
+        </motion.button>
+      </div>
+      <p className="text-center mt-4">
+        Вече имаш акаунт?{" "}
+        <Link href="/login" className="text-green-500 hover:underline">
+          Влез тук
+        </Link>
+      </p>
     </motion.div>
   );
 };

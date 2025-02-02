@@ -15,7 +15,7 @@ export default function LoginPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      <main className="flex-grow bg-gray-100 flex justify-center items-center py-12">
+      <main className="flex-grow flex justify-center items-center py-12">
         <Login onSuccess={handleSuccess} />{" "}
         {/* Пренасяне на обработчика за успех в Login компонента */}
       </main>

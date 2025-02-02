@@ -6,11 +6,13 @@ import { auth } from "../lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { MessageCircle, Bell, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [unreadMessages, setUnreadMessages] = useState(3); // Example state for unread messages
+  const [unreadMessages, setUnreadMessages] = useState(3);
+  const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -37,7 +39,7 @@ const Navbar = () => {
   return (
     <>
       <nav className="bg-yellow-500 p-4 flex justify-between items-center fixed top-0 left-0 w-full z-50 shadow-xl transition-all ease-in-out duration-300">
-        <Link href="/">
+        <button onClick={() => (window.location.href = "/")}>
           <motion.img
             src="/images/logo.png"
             alt="TripMate Logo"
@@ -45,7 +47,7 @@ const Navbar = () => {
             whileHover={{ scale: 1.1, rotate: 5 }}
             whileTap={{ scale: 0.9 }}
           />
-        </Link>
+        </button>
 
         <div className="relative flex items-center">
           {isLoggedIn ? (

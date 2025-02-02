@@ -11,20 +11,13 @@ import {
   where,
   getDocs,
   type Firestore,
-  serverTimestamp,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import {
-  Star,
-  MessageCircle,
-  Car,
-  Calendar,
-  Users,
-  MapPin,
-} from "lucide-react";
+import { MessageCircle, Car, Calendar, Users, MapPin } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 interface Ad {
   start: string;
@@ -387,18 +380,35 @@ const OfferDetails = () => {
               <p className="text-sm text-gray-600 mt-2">
                 Рейтинг: {user.rating.toFixed(1)}
               </p>
-              <motion.button
+              <motion.div
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="mt-4 bg-green-500 text-white font-bold py-2 px-6 rounded-full hover:bg-green-600 transition-all flex items-center justify-center"
-                onClick={handleStartChat}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                className="w-full space-y-4 mt-4"
               >
-                <MessageCircle className="mr-2" />
-                Изпрати съобщение
-              </motion.button>
+                <motion.button
+                  className="w-full relative overflow-hidden group bg-green-500 text-white font-bold py-2 px-6 rounded-full transition-all duration-300"
+                  onClick={handleStartChat}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span className="relative z-10 flex items-center justify-center">
+                    <MessageCircle className="mr-2" />
+                    Изпрати съобщение
+                  </span>
+                  <span className="absolute inset-0 bg-green-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out"></span>
+                </motion.button>
+
+                <Link
+                  href={`/user/${uid}`}
+                  className="w-full inline-block relative overflow-hidden group bg-yellow-500 text-white font-bold py-2 px-6 rounded-full transition-all duration-300 text-center"
+                >
+                  <span className="relative z-10 flex items-center justify-center">
+                    Виж профила
+                  </span>
+                  <span className="absolute inset-0 bg-yellow-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out"></span>
+                </Link>
+              </motion.div>
             </>
           ) : (
             <p className="text-gray-800 mb-4">

@@ -11,7 +11,6 @@ export default function RegisterConfirmation() {
         transition={{ duration: 0.5 }}
         className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md relative overflow-hidden"
       >
-        {/* Декоративни жълти елементи */}
         <div className="absolute -top-6 -left-6 w-24 h-24 bg-yellow-300 opacity-50 rounded-full blur-xl"></div>
         <div className="absolute top-6 -right-6 w-28 h-28 bg-yellow-500 opacity-30 rounded-full blur-xl"></div>
 
@@ -27,7 +26,6 @@ export default function RegisterConfirmation() {
           верификация.
         </p>
 
-        {/* Жълта лента в долната част */}
         <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 to-yellow-600"></div>
       </motion.div>
     </div>

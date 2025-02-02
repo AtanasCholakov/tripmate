@@ -21,6 +21,7 @@ const CreateAdForm = () => {
   const router = useRouter();
 
   const MAX_STOPS = 5;
+  const MAX_SEATS = 7;
 
   const handleAddStop = () => {
     if (stopInput.trim() && !stops.includes(stopInput)) {
@@ -50,8 +51,14 @@ const CreateAdForm = () => {
       return;
     }
 
-    if (Number(seats) < 1) {
-      alert("Свободните места трябва да бъдат поне 1.");
+    if (start.toLowerCase() === end.toLowerCase()) {
+      alert("Началната и крайната точка не могат да бъдат еднакви.");
+      return;
+    }
+
+    const seatsNumber = Number(seats);
+    if (seatsNumber < 1 || seatsNumber > MAX_SEATS) {
+      alert(`Свободните места трябва да бъдат между 1 и ${MAX_SEATS}.`);
       return;
     }
 
@@ -69,7 +76,7 @@ const CreateAdForm = () => {
         endLower: end.toLowerCase(),
         stops: stops.map((stop) => stop),
         date,
-        seats: Number(seats),
+        seats: seatsNumber,
         car,
         description,
         userId: user.uid,
@@ -79,7 +86,17 @@ const CreateAdForm = () => {
       const adId = docRef.id;
       alert("Обявата е създадена успешно!");
 
-      router.push(`/ad-details?id=${adId}`);
+      router.push(
+        `/offer-details?id=${encodeURIComponent(adId)}&uid=${encodeURIComponent(
+          user.uid
+        )}&start=${encodeURIComponent(start)}&end=${encodeURIComponent(
+          end
+        )}&date=${encodeURIComponent(date)}&seats=${encodeURIComponent(
+          seats.toString()
+        )}&car=${encodeURIComponent(
+          car || ""
+        )}&description=${encodeURIComponent(description || "")}`
+      );
 
       setStart("");
       setEnd("");
@@ -222,7 +239,8 @@ const CreateAdForm = () => {
           transition={{ duration: 0.5, delay: 0.5 }}
           type="number"
           min="1"
-          placeholder="Свободни места"
+          max={MAX_SEATS}
+          placeholder={`Свободни места (1-${MAX_SEATS})`}
           className="p-2 border rounded"
           value={seats}
           onChange={(e) => setSeats(Number(e.target.value))}
