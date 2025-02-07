@@ -19,6 +19,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { MessageCircle, Car, Calendar, Users, MapPin } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import type firebase from "firebase/compat/app";
 
 interface Ad {
   start: string;
@@ -27,7 +28,7 @@ interface Ad {
   seats: number;
   car?: string;
   description?: string;
-  createdAt: any;
+  createdAt: firebase.firestore.Timestamp;
   stops?: string[];
 }
 
@@ -35,13 +36,12 @@ interface User {
   name: string;
   rating: number;
   profilePicture?: string;
-  votes?: number;
+  votes: number;
 }
 
 const OfferDetails = () => {
   const [ad, setAd] = useState<Ad | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [rating, setRating] = useState<number | null>(null);
   const [hasRated, setHasRated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,7 +113,7 @@ const OfferDetails = () => {
             setError("Потребителят не съществува.");
           }
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Грешка при зареждане на данните:", err);
         setError("Неуспешно зареждане на данните.");
       } finally {
@@ -154,7 +154,9 @@ const OfferDetails = () => {
       );
       const ratingsSnapshot = await getDocs(userRatingsQuery);
 
-      const ratings = ratingsSnapshot.docs.map((doc) => doc.data().rating);
+      const ratings: number[] = ratingsSnapshot.docs.map(
+        (doc) => doc.data().rating
+      );
       const totalVotes = ratings.length;
       const averageRating = ratings.reduce((a, b) => a + b, 0) / totalVotes;
 
@@ -170,14 +172,14 @@ const OfferDetails = () => {
         setUser((prevUser) => ({
           ...prevUser!,
           rating: averageRating,
+          votes: totalVotes,
         }));
       }
 
       setHasRated(true);
-      setRating(value);
       setRatingMessage("Гласът ви е записан");
       setTimeout(() => setRatingMessage(null), 2000);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Грешка при поставяне на рейтинг:", err);
       setRatingMessage("Грешка при гласуване");
       setTimeout(() => setRatingMessage(null), 2000);
@@ -208,7 +210,7 @@ const OfferDetails = () => {
       } else {
         router.push(`/chat?userId=${uid}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error starting chat:", error);
     }
   };

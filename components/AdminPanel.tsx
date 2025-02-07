@@ -12,6 +12,7 @@ import {
   limit,
   startAfter,
   orderBy,
+  type QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { User, AlertTriangle, Search, Home } from "lucide-react";
@@ -32,7 +33,9 @@ const AdminPanel: React.FC = () => {
   const [totalReports, setTotalReports] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(
+    null
+  );
   const usersPerPage = 12;
 
   useEffect(() => {

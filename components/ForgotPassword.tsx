@@ -26,15 +26,15 @@ const ForgotPassword = () => {
       setMessage(
         "Изпратен е имейл за възстановяване на паролата. Моля, проверете входящата си поща."
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Password reset error:", error);
-      setMessage(getErrorMessage(error));
+      setMessage(getErrorMessage(error as Error));
     } finally {
       setLoading(false);
     }
   };
 
-  const getErrorMessage = (error: any): string => {
+  const getErrorMessage = (error: Error & { code?: string }): string => {
     switch (error.code) {
       case "auth/invalid-email":
         return "Невалиден имейл адрес!";

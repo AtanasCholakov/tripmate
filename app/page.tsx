@@ -11,17 +11,15 @@ import OfferDetails from "@/components/OfferDetails";
 import { db, auth } from "../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
+import type { User } from "firebase/auth";
 
 function Page() {
-  const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [showVerificationSuccess, setShowVerificationSuccess] = useState(false);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
-        setIsEmailVerified(user.emailVerified);
-
         // Проверяваме дали съобщението вече е показано
         const verificationShown = localStorage.getItem("verificationShown");
         if (user.emailVerified && verificationShown !== "true") {
@@ -30,8 +28,6 @@ function Page() {
 
           setTimeout(() => setShowVerificationSuccess(false), 5000);
         }
-      } else {
-        setIsEmailVerified(false);
       }
       setIsAuthChecked(true);
     });
@@ -89,7 +85,7 @@ function Page() {
             element={
               <>
                 <Hero />
-                <HomePageContent isEmailVerified={isEmailVerified} />
+                <HomePageContent />
               </>
             }
           />
@@ -101,13 +97,25 @@ function Page() {
   );
 }
 
-function HomePageContent({ isEmailVerified }: { isEmailVerified: boolean }) {
+function HomePageContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [topAds, setTopAds] = useState<any[]>([]);
+  const [topAds, setTopAds] = useState<Ad[]>([]);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
 
+  interface Ad {
+    id: string;
+    start: string;
+    end: string;
+    date: string;
+    seats: number;
+    userId: string;
+    car: string;
+    description: string;
+    userRating: number;
+  }
+
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user: any) => {
+    const unsubscribe = auth.onAuthStateChanged((user: User | null) => {
       setIsLoggedIn(!!user);
       setIsAuthChecked(true);
     });
@@ -119,11 +127,11 @@ function HomePageContent({ isEmailVerified }: { isEmailVerified: boolean }) {
     const fetchTopAds = async () => {
       try {
         const adSnapshot = await getDocs(collection(db, "ads"));
-        const adList: any[] = [];
+        const adList: Ad[] = [];
 
         for (const doc of adSnapshot.docs) {
           const adData = doc.data();
-          const ad = {
+          const ad: Ad = {
             id: doc.id,
             start: adData.start,
             end: adData.end,
@@ -132,6 +140,7 @@ function HomePageContent({ isEmailVerified }: { isEmailVerified: boolean }) {
             userId: adData.userId,
             car: adData.car || "",
             description: adData.description || "",
+            userRating: 0, // Initialize userRating here
           };
           adList.push(ad);
         }
@@ -151,11 +160,11 @@ function HomePageContent({ isEmailVerified }: { isEmailVerified: boolean }) {
           userRating: userRatings[ad.userId] || 0,
         }));
 
-        const topThreeAds = adsWithRatings
+        const sortedAds = adsWithRatings
           .sort((a, b) => b.userRating - a.userRating)
           .slice(0, 3);
 
-        setTopAds(topThreeAds);
+        setTopAds(sortedAds as Ad[]);
       } catch (error) {
         console.error("Грешка при зареждане на данните:", error);
       }

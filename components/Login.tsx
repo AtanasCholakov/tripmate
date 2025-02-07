@@ -19,7 +19,11 @@ import {
 } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
-import type React from "react"; // Added import for React
+import type React from "react";
+
+interface FirebaseAuthError extends Error {
+  code?: string;
+}
 
 const Login = () => {
   const [usernameOrEmail, setUsernameOrEmail] = useState<string>("");
@@ -76,7 +80,7 @@ const Login = () => {
       }
 
       window.location.href = "/";
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -109,7 +113,7 @@ const Login = () => {
       }
 
       window.location.href = "/";
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Google sign-in error:", error);
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -117,23 +121,27 @@ const Login = () => {
     }
   };
 
-  const getErrorMessage = (error: any): string => {
-    switch (error.code) {
-      case "auth/invalid-email":
-        return "Невалиден имейл адрес!";
-      case "auth/wrong-password":
-        return "Грешна парола!";
-      case "auth/invalid-credential":
-        return "Входните данни са невалидни!";
-      case "auth/user-not-found":
-        return "Потребителят не е намерен!";
-      case "auth/popup-closed-by-user":
-        return "Прозорецът за вход беше затворен. Моля, опитайте отново.";
-      case "auth/operation-not-allowed":
-        return "Този метод за вход не е разрешен. Моля, свържете се с поддръжката.";
-      default:
-        return error.message || "Грешка при влизане.";
+  const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error) {
+      const firebaseError = error as FirebaseAuthError;
+      switch (firebaseError.code) {
+        case "auth/invalid-email":
+          return "Невалиден имейл адрес!";
+        case "auth/wrong-password":
+          return "Грешна парола!";
+        case "auth/invalid-credential":
+          return "Входните данни са невалидни!";
+        case "auth/user-not-found":
+          return "Потребителят не е намерен!";
+        case "auth/popup-closed-by-user":
+          return "Прозорецът за вход беше затворен. Моля, опитайте отново.";
+        case "auth/operation-not-allowed":
+          return "Този метод за вход не е разрешен. Моля, свържете се с поддръжката.";
+        default:
+          return firebaseError.message || "Грешка при влизане.";
+      }
     }
+    return "Неочаквана грешка при влизане.";
   };
 
   return (

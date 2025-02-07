@@ -47,9 +47,9 @@ export default function AuthAction() {
         } else {
           throw new Error("Невалиден режим на действие.");
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Action error:", error);
-        setMessage(getErrorMessage(error));
+        setMessage(getErrorMessage(error as Error));
       } finally {
         setLoading(false);
       }
@@ -77,27 +77,30 @@ export default function AuthAction() {
       setTimeout(() => {
         router.push("/login");
       }, 3000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Password reset error:", error);
-      setMessage(getErrorMessage(error));
+      setMessage(getErrorMessage(error as Error));
     } finally {
       setLoading(false);
     }
   };
 
-  const getErrorMessage = (error: any): string => {
-    switch (error.code) {
-      case "auth/invalid-action-code":
-        return "Невалиден или изтекъл код за действие. Моля, опитайте отново.";
-      case "auth/user-disabled":
-        return "Този потребителски акаунт е деактивиран.";
-      case "auth/user-not-found":
-        return "Потребителят не е намерен.";
-      case "auth/weak-password":
-        return "Паролата е твърде слаба. Моля, изберете по-силна парола.";
-      default:
-        return "Възникна грешка. Моля, опитайте отново.";
+  const getErrorMessage = (error: Error & { code?: string }): string => {
+    if (error instanceof Error && "code" in error) {
+      switch (error.code) {
+        case "auth/invalid-action-code":
+          return "Невалиден или изтекъл код за действие. Моля, опитайте отново.";
+        case "auth/user-disabled":
+          return "Този потребителски акаунт е деактивиран.";
+        case "auth/user-not-found":
+          return "Потребителят не е намерен.";
+        case "auth/weak-password":
+          return "Паролата е твърде слаба. Моля, изберете по-силна парола.";
+        default:
+          return "Възникна грешка. Моля, опитайте отново.";
+      }
     }
+    return "Възникна неочаквана грешка. Моля, опитайте отново.";
   };
 
   return (

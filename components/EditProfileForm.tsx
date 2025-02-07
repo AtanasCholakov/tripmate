@@ -112,7 +112,7 @@ const EditProfileForm = () => {
 
       // Пренасочване към страницата на профила или началната страница
       router.push("/profile");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Грешка при обновяване на профила:", error);
       setError("Неуспешно обновяване на профила. Моля, опитайте отново.");
     } finally {

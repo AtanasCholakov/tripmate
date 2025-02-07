@@ -15,6 +15,10 @@ import { setDoc, doc, getDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
 
+interface FirebaseAuthError extends Error {
+  code?: string;
+}
+
 interface FormData {
   name: string;
   username: string;
@@ -91,7 +95,7 @@ const Register = () => {
 
       // Redirect to a confirmation page
       router.push("/register-confirmation");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error during registration:", error);
       setError(getErrorMessage(error));
     } finally {
@@ -124,7 +128,7 @@ const Register = () => {
       }
 
       window.location.href = "/";
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error during Google sign-in:", error);
       setError(getErrorMessage(error));
     } finally {
@@ -132,21 +136,28 @@ const Register = () => {
     }
   };
 
-  const getErrorMessage = (error: any): string => {
-    switch (error.code) {
-      case "auth/email-already-in-use":
-        return "This email is already registered. Please try logging in.";
-      case "auth/invalid-email":
-        return "Invalid email address. Please check and try again.";
-      case "auth/weak-password":
-        return "Password is too weak. Please use a stronger password.";
-      case "auth/operation-not-allowed":
-        return "This sign-in method is not allowed. Please contact support.";
-      case "auth/popup-closed-by-user":
-        return "Sign-in popup was closed. Please try again.";
-      default:
-        return "An error occurred during registration. Please try again.";
+  const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error) {
+      const firebaseError = error as FirebaseAuthError;
+      switch (firebaseError.code) {
+        case "auth/email-already-in-use":
+          return "This email is already registered. Please try logging in.";
+        case "auth/invalid-email":
+          return "Invalid email address. Please check and try again.";
+        case "auth/weak-password":
+          return "Password is too weak. Please use a stronger password.";
+        case "auth/operation-not-allowed":
+          return "This sign-in method is not allowed. Please contact support.";
+        case "auth/popup-closed-by-user":
+          return "Sign-in popup was closed. Please try again.";
+        default:
+          return (
+            firebaseError.message ||
+            "An error occurred during registration. Please try again."
+          );
+      }
     }
+    return "An unexpected error occurred during registration.";
   };
 
   return (
