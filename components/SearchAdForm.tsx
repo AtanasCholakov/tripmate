@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import type React from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { db } from "../lib/firebase";
 import {
   collection,
@@ -15,9 +16,9 @@ import {
 import OfferCard from "./OfferCard";
 import CITIES from "@/lib/cities";
 import { motion } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 
 const SearchAdForm = () => {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [start, setStart] = useState("");
@@ -29,6 +30,9 @@ const SearchAdForm = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [hasSearched, setHasSearched] = useState(false);
+  const [sortBy, setSortBy] = useState("recent");
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const savedSearch = JSON.parse(localStorage.getItem("savedSearch") || "{}");
@@ -41,6 +45,20 @@ const SearchAdForm = () => {
     } else {
       fetchTopRatedAds();
     }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        sortMenuRef.current &&
+        !sortMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowSortMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const fetchTopRatedAds = async () => {
@@ -109,12 +127,9 @@ const SearchAdForm = () => {
         })
       );
 
-      const sortedAds = adsWithUserRatings.sort(
-        (a, b) => b.userRating - a.userRating
-      );
-
-      setResults(sortedAds);
-      setTotalPages(Math.ceil(sortedAds.length / 6));
+      setResults(adsWithUserRatings);
+      setTotalPages(Math.ceil(adsWithUserRatings.length / 6));
+      sortResults(adsWithUserRatings, sortBy);
     } catch (error) {
       console.error("Error fetching ads:", error);
     } finally {
@@ -128,6 +143,54 @@ const SearchAdForm = () => {
     const searchParams = { start, end, date };
     localStorage.setItem("savedSearch", JSON.stringify(searchParams));
     fetchAds(searchParams);
+  };
+
+  const sortResults = (ads: any[], sortBy: string) => {
+    const sortedAds = [...ads];
+    switch (sortBy) {
+      case "recent":
+        sortedAds.sort((a, b) => {
+          const dateA = new Date(a.createdAt.seconds * 1000);
+          const dateB = new Date(b.createdAt.seconds * 1000);
+          return dateB.getTime() - dateA.getTime();
+        });
+        break;
+      case "alphabetical":
+        sortedAds.sort((a, b) => a.start.localeCompare(b.start));
+        break;
+      case "rating":
+        sortedAds.sort((a, b) => b.userRating - a.userRating);
+        break;
+      case "travelDate":
+        sortedAds.sort((a, b) => {
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+          return dateA.getTime() - dateB.getTime();
+        });
+        break;
+    }
+    setResults(sortedAds);
+  };
+
+  const handleSort = (newSortBy: string) => {
+    setSortBy(newSortBy);
+    sortResults(results, newSortBy);
+    setShowSortMenu(false);
+  };
+
+  const getSortLabel = (sortBy: string) => {
+    switch (sortBy) {
+      case "recent":
+        return "Най-скорошни";
+      case "alphabetical":
+        return "По азбучен ред";
+      case "rating":
+        return "По рейтинг на потребител";
+      case "travelDate":
+        return "По дата на пътуване";
+      default:
+        return "Сортиране";
+    }
   };
 
   const paginatedResults = results.slice(
@@ -238,9 +301,50 @@ const SearchAdForm = () => {
             </div>
           ) : results.length > 0 ? (
             <>
-              <h3 className="text-2xl font-bold mb-6 text-center text-yellow-500">
-                Намерени обяви
-              </h3>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-yellow-500">
+                  Намерени обяви
+                </h3>
+                <div className="relative" ref={sortMenuRef}>
+                  <button
+                    onClick={() => setShowSortMenu(!showSortMenu)}
+                    className="flex items-center justify-between bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors duration-300 min-w-[200px]"
+                  >
+                    <span>{getSortLabel(sortBy)}</span>
+                    <ChevronDown size={20} />
+                  </button>
+                  {showSortMenu && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                      <div className="py-1">
+                        <button
+                          onClick={() => handleSort("recent")}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Най-скорошни
+                        </button>
+                        <button
+                          onClick={() => handleSort("alphabetical")}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          По азбучен ред
+                        </button>
+                        <button
+                          onClick={() => handleSort("rating")}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          По рейтинг на потребител
+                        </button>
+                        <button
+                          onClick={() => handleSort("travelDate")}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          По дата на пътуване
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 {paginatedResults.map((ad) => (
                   <OfferCard

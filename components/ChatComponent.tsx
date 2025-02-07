@@ -128,7 +128,9 @@ export default function ChatComponent({
     }
   };
 
-  const formatMessageDate = (date: Date) => {
+  const formatMessageDate = (date: Date | null) => {
+    if (!date) return "";
+
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -186,17 +188,15 @@ export default function ChatComponent({
           messages.reduce((acc: JSX.Element[], message, index) => {
             if (
               index === 0 ||
-              (message.timestamp &&
-                messages[index - 1].timestamp &&
-                formatMessageDate(message.timestamp) !==
-                  formatMessageDate(messages[index - 1].timestamp))
+              formatMessageDate(message.timestamp) !==
+                formatMessageDate(messages[index - 1].timestamp)
             ) {
               acc.push(
                 <div
                   key={`date-${message.timestamp?.getTime()}`}
                   className="text-center text-gray-500 text-sm my-2"
                 >
-                  {formatMessageDate(message.timestamp!)}
+                  {formatMessageDate(message.timestamp)}
                 </div>
               );
             }
@@ -248,7 +248,6 @@ export default function ChatComponent({
         className="bg-white p-4 shadow-md rounded-lg"
       >
         <div className="flex items-center space-x-3">
-          {/* Поле за текст */}
           <input
             type="text"
             value={newMessage}
@@ -257,7 +256,6 @@ export default function ChatComponent({
             className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all duration-300 group-hover:shadow-lg"
           />
 
-          {/* Икона за прикачване на файл */}
           <label className="cursor-pointer relative group">
             <PaperclipIcon className="w-6 h-6 text-gray-500 group-hover:text-yellow-500 transition-colors duration-300" />
             <input
@@ -268,7 +266,6 @@ export default function ChatComponent({
             />
           </label>
 
-          {/* Бутон за изпращане */}
           <button
             type="submit"
             className="bg-yellow-500 text-white p-2 rounded-full hover:bg-yellow-600 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 transform hover:scale-105 group relative z-10"

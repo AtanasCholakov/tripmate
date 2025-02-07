@@ -11,8 +11,9 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
-import { setDoc, doc, getDoc } from "firebase/firestore"; // Added getDoc import
+import { setDoc, doc, getDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
+import { Eye, EyeOff } from "lucide-react";
 
 interface FormData {
   name: string;
@@ -33,6 +34,8 @@ const Register = () => {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -50,7 +53,7 @@ const Register = () => {
     const { name, username, email, password, confirmPassword } = formData;
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError("Паролите не съвпадат.");
       setLoading(false);
       return;
     }
@@ -80,7 +83,11 @@ const Register = () => {
       });
 
       // Send verification email
-      await sendEmailVerification(user);
+      const actionCodeSettings = {
+        url: `${window.location.origin}/auth-action?mode=verifyEmail`,
+        handleCodeInApp: true,
+      };
+      await sendEmailVerification(user, actionCodeSettings);
 
       // Redirect to a confirmation page
       router.push("/register-confirmation");
@@ -116,10 +123,9 @@ const Register = () => {
         });
       }
 
-      // Redirect to home page or dashboard
       window.location.href = "/";
     } catch (error: any) {
-      console.error("Грешка при влизане с Google:", error);
+      console.error("Error during Google sign-in:", error);
       setError(getErrorMessage(error));
     } finally {
       setLoading(false);
@@ -129,17 +135,17 @@ const Register = () => {
   const getErrorMessage = (error: any): string => {
     switch (error.code) {
       case "auth/email-already-in-use":
-        return "Този имейл вече е регистриран. Моля, опитайте да влезете.";
+        return "This email is already registered. Please try logging in.";
       case "auth/invalid-email":
-        return "Невалиден имейл адрес. Моля, проверете и опитайте отново.";
+        return "Invalid email address. Please check and try again.";
       case "auth/weak-password":
-        return "Паролата е твърде слаба. Моля, използвайте по-силна парола.";
+        return "Password is too weak. Please use a stronger password.";
       case "auth/operation-not-allowed":
-        return "Този метод за вход не е позволен. Моля, свържете се с поддръжката.";
+        return "This sign-in method is not allowed. Please contact support.";
       case "auth/popup-closed-by-user":
-        return "Прозорецът за вход беше затворен. Моля, опитайте отново.";
+        return "Sign-in popup was closed. Please try again.";
       default:
-        return "Възникна грешка при регистрацията. Моля, опитайте отново.";
+        return "An error occurred during registration. Please try again.";
     }
   };
 
@@ -185,26 +191,52 @@ const Register = () => {
           className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         />
-        <motion.input
-          whileFocus={{ scale: 1.05 }}
-          type="password"
-          name="password"
-          value={formData.password}
-          placeholder="Парола"
-          onChange={handleInputChange}
-          className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-          required
-        />
-        <motion.input
-          whileFocus={{ scale: 1.05 }}
-          type="password"
-          name="confirmPassword"
-          value={formData.confirmPassword}
-          placeholder="Потвърди паролата"
-          onChange={handleInputChange}
-          className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-          required
-        />
+        <div className="relative">
+          <motion.input
+            whileFocus={{ scale: 1.05 }}
+            type={showPassword ? "text" : "password"}
+            name="password"
+            value={formData.password}
+            placeholder="Парола"
+            onChange={handleInputChange}
+            className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2"
+          >
+            {showPassword ? (
+              <EyeOff className="h-5 w-5 text-gray-400" />
+            ) : (
+              <Eye className="h-5 w-5 text-gray-400" />
+            )}
+          </button>
+        </div>
+        <div className="relative">
+          <motion.input
+            whileFocus={{ scale: 1.05 }}
+            type={showConfirmPassword ? "text" : "password"}
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            placeholder="Потвърди паролата"
+            onChange={handleInputChange}
+            className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2"
+          >
+            {showConfirmPassword ? (
+              <EyeOff className="h-5 w-5 text-gray-400" />
+            ) : (
+              <Eye className="h-5 w-5 text-gray-400" />
+            )}
+          </button>
+        </div>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}

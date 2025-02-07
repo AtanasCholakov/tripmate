@@ -1,9 +1,13 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { auth, db } from "../lib/firebase";
 import {
   onAuthStateChanged,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  reauthenticateWithPopup,
+  GoogleAuthProvider,
 } from "firebase/auth";
 import {
   doc,
@@ -13,6 +17,7 @@ import {
   where,
   getDocs,
   deleteDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -203,32 +208,115 @@ const ProfilePage = () => {
     }
   };
 
+  const deleteUserAds = async (userId: string) => {
+    const adsQuery = query(
+      collection(db, "ads"),
+      where("userId", "==", userId)
+    );
+    const adsSnapshot = await getDocs(adsQuery);
+    const batch = writeBatch(db);
+
+    adsSnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+  };
+
+  const deleteUserChats = async (userId: string) => {
+    const chatsQuery = query(
+      collection(db, "chats"),
+      where("participants", "array-contains", userId)
+    );
+    const chatsSnapshot = await getDocs(chatsQuery);
+    const batch = writeBatch(db);
+
+    chatsSnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+  };
+
+  const deleteUserRatings = async (userId: string) => {
+    const ratingsQuery = query(
+      collection(db, "ratings"),
+      where("fromUserId", "==", userId)
+    );
+    const ratingsSnapshot = await getDocs(ratingsQuery);
+    const batch = writeBatch(db);
+
+    ratingsSnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+  };
+
+  const deleteUserReports = async (userId: string) => {
+    const reportsQuery = query(
+      collection(db, "reports"),
+      where("reporterId", "==", userId)
+    );
+    const reportsSnapshot = await getDocs(reportsQuery);
+    const batch = writeBatch(db);
+
+    reportsSnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+  };
+
   const handleDeleteProfile = async () => {
-    if (!password) {
-      alert("Моля въведете паролата си.");
-      return;
-    }
+    if (!auth.currentUser) return;
+
     try {
-      const userCredential = EmailAuthProvider.credential(
-        user?.email!,
-        password
-      );
-      await reauthenticateWithCredential(auth.currentUser!, userCredential);
-      // Proceed with profile deletion after successful reauthentication
-      await deleteDoc(doc(db, "users", user?.uid!));
+      setIsDeleting(true);
+
+      if (auth.currentUser.providerData[0].providerId === "password") {
+        if (!password) {
+          alert("Моля въведете паролата си.");
+          setIsDeleting(false);
+          return;
+        }
+        const userCredential = EmailAuthProvider.credential(
+          user?.email!,
+          password
+        );
+        await reauthenticateWithCredential(auth.currentUser, userCredential);
+      } else if (auth.currentUser.providerData[0].providerId === "google.com") {
+        const provider = new GoogleAuthProvider();
+        await reauthenticateWithPopup(auth.currentUser, provider);
+      }
+
+      // Delete all user-related data
+      await deleteUserAds(auth.currentUser.uid);
+      await deleteUserChats(auth.currentUser.uid);
+      await deleteUserRatings(auth.currentUser.uid);
+      await deleteUserReports(auth.currentUser.uid);
+
+      // Delete user document
+      await deleteDoc(doc(db, "users", auth.currentUser.uid));
+
+      // Delete user authentication
+      await auth.currentUser.delete();
+
       alert("Профилът е изтрит успешно!");
-      router.push("/");
+      window.location.href = "/";
     } catch (err) {
       console.error(err);
-      alert("Грешка при изтриването на профила. Проверете паролата си.");
+      alert("Грешка при изтриването на профила. Моля, опитайте отново.");
+    } finally {
+      setIsDeleting(false);
+      setShowPasswordModal(false);
     }
   };
 
   if (loading)
     return <p className="text-center mt-10">Зареждане на профила...</p>;
   if (error) return <p className="text-center mt-10 text-red-500">{error}</p>;
-  if (!user)
-    return <p className="text-center mt-10">Не сте влезли в профила си.</p>;
+  if (!user) return (window.location.href = "/");
 
   const OfferCard = ({
     docId,
@@ -345,7 +433,7 @@ const ProfilePage = () => {
           {selectedTab === "profile" && (
             <div className="bg-white shadow rounded-lg p-8">
               <div className="flex items-center space-x-6 mb-6">
-                {user.profilePicture ? (
+                {user?.profilePicture ? (
                   <img
                     src={user.profilePicture || "/placeholder.svg"}
                     alt="Профилна снимка"
@@ -358,21 +446,23 @@ const ProfilePage = () => {
                 )}
                 <div>
                   <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                    {user.name}
+                    {user?.name}
                   </h1>
-                  <p className="text-xl text-gray-600 mb-1">@{user.username}</p>
-                  <p className="text-gray-500">{user.email}</p>
+                  <p className="text-xl text-gray-600 mb-1">
+                    @{user?.username}
+                  </p>
+                  <p className="text-gray-500">{user?.email}</p>
                 </div>
               </div>
 
               <div className="mb-6">
-                <RatingComponent rating={user.rating} votes={user.votes} />
+                <RatingComponent rating={user?.rating} votes={user?.votes} />
               </div>
 
               <div className="bg-gray-100 rounded-lg p-4 mb-6">
                 <p className="text-gray-600">
                   <span className="font-semibold">Регистриран на:</span>{" "}
-                  {user.createdAt}
+                  {user?.createdAt}
                 </p>
               </div>
 
@@ -428,7 +518,7 @@ const ProfilePage = () => {
                 <div className="flex flex-col items-center justify-center h-[400px]">
                   <p className="text-gray-500 text-lg mb-4">Нямате обяви.</p>
                   <button
-                    onClick={() => (window.location.href = "/")}
+                    onClick={() => (window.location.href = "/create-ad")}
                     className="relative overflow-hidden bg-green-500 text-white font-bold py-2 px-6 mx-10 rounded-md text-xl text-center hover:bg-green-600 transition-all duration-300 group"
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
@@ -447,19 +537,22 @@ const ProfilePage = () => {
         <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
           <div className="bg-white p-8 rounded-lg shadow-lg w-96 max-w-md">
             <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-              Потвърдете паролата си
+              Потвърдете изтриването на профила
             </h2>
             <p className="mb-4 text-center text-gray-600">
-              За да изтриете профила си, моля въведете паролата си за
-              потвърждение.
+              {auth.currentUser?.providerData[0].providerId === "password"
+                ? "За да изтриете профила си, моля въведете паролата си за потвърждение."
+                : "За да изтриете профила си, ще трябва да потвърдите действието чрез вашия Google акаунт."}
             </p>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md mb-6 focus:outline-none focus:ring-2 focus:ring-red-500"
-              placeholder="Вашата парола"
-            />
+            {auth.currentUser?.providerData[0].providerId === "password" && (
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md mb-6 focus:outline-none focus:ring-2 focus:ring-red-500"
+                placeholder="Вашата парола"
+              />
+            )}
             <div className="flex justify-between space-x-4">
               <button
                 onClick={() => setShowPasswordModal(false)}
@@ -472,9 +565,12 @@ const ProfilePage = () => {
               </button>
               <button
                 onClick={handleDeleteProfile}
-                className="w-1/2 bg-red-500 text-white font-semibold py-2 px-4 rounded-md text-sm text-center relative overflow-hidden hover:bg-red-600 transition-all duration-300 transform hover:scale-105 group focus:outline-none focus:ring-2 focus:ring-red-400"
+                disabled={isDeleting}
+                className="w-1/2 bg-red-500 text-white font-semibold py-2 px-4 rounded-md text-sm text-center relative overflow-hidden hover:bg-red-600 transition-all duration-300 transform hover:scale-105 group focus:outline-none focus:ring-2 focus:ring-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="z-10 relative">Изтриване</span>
+                <span className="z-10 relative">
+                  {isDeleting ? "Изтриване..." : "Изтриване"}
+                </span>
                 <span className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
                 <span className="absolute bottom-0 left-0 w-full h-1 bg-red-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
                 <span className="absolute top-0 left-0 w-full h-full bg-red-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>

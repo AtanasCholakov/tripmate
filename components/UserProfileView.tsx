@@ -16,7 +16,6 @@ import {
 } from "firebase/firestore";
 import { Star, Flag, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 interface UserProfile {
   uid: string;
@@ -160,7 +159,6 @@ export default function UserProfileView({ userId }: UserProfileViewProps) {
   const [userAds, setUserAds] = useState<any[]>([]);
   const [selectedTab, setSelectedTab] = useState<"profile" | "ads">("profile");
   const [hasRated, setHasRated] = useState(false);
-  const router = useRouter();
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [hasReported, setHasReported] = useState(false);
@@ -174,11 +172,6 @@ export default function UserProfileView({ userId }: UserProfileViewProps) {
     } catch (error) {
       console.error("Error deleting ad:", error);
     }
-  };
-
-  const handleEdit = (id: string) => {
-    // Implement edit functionality
-    console.log(`Editing ad with id: ${id}`);
   };
 
   useEffect(() => {
@@ -386,7 +379,7 @@ export default function UserProfileView({ userId }: UserProfileViewProps) {
       alert(
         "Потребителският профил и свързаните с него данни са изтрити успешно."
       );
-      router.push("/"); // Redirect to home page or admin dashboard
+      window.location.href = "/";
     } catch (error) {
       console.error("Error deleting user:", error);
       alert(
@@ -564,7 +557,8 @@ export default function UserProfileView({ userId }: UserProfileViewProps) {
                     </h3>
                     <p className="mb-4">
                       Това действие ще изтрие потребителския профил и всички
-                      свързани с него данни. Въведете "DELETE" за да потвърдите.
+                      свързани с него данни. Въведете &quot;DELETE&quot; за да
+                      потвърдите.
                     </p>
                     <input
                       type="text"

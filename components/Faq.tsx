@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 
+const handleRedirect = () => {
+  window.location.href = "/";
+};
+
 const Faq = () => {
   const faqs = [
     {
@@ -24,12 +28,12 @@ const Faq = () => {
       answer: (
         <>
           След като сте влезли в профила си, кликнете върху{" "}
-          <Link
-            href="/create-ad"
+          <button
+            onClick={handleRedirect}
             className="text-yellow-500 font-bold hover:underline"
           >
             Създай обява
-          </Link>{" "}
+          </button>{" "}
           и попълнете необходимата информация.
         </>
       ),

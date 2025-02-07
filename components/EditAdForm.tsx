@@ -1,11 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { auth, db } from "../lib/firebase";
+import { auth, db, onAuthStateChanged } from "../lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import CITIES from "@/lib/cities";
 import { useRouter } from "next/navigation";
+import {
+  MAX_LOCATION_LENGTH,
+  MAX_STOPS,
+  MAX_SEATS,
+  MAX_CAR_NAME_LENGTH,
+  MAX_DESCRIPTION_LENGTH,
+} from "../lib/constants";
 
 interface EditAdFormProps {
   adId: string;
@@ -24,8 +31,15 @@ const EditAdForm: React.FC<EditAdFormProps> = ({ adId }) => {
   const [user] = useAuthState(auth);
   const router = useRouter();
 
-  const MAX_STOPS = 5;
-  const MAX_SEATS = 7;
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "/";
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const fetchAdData = async () => {
@@ -60,13 +74,15 @@ const EditAdForm: React.FC<EditAdFormProps> = ({ adId }) => {
   }, [adId, router]);
 
   const handleAddStop = () => {
-    if (stopInput.trim() && !stops.includes(stopInput)) {
-      if (stops.length < MAX_STOPS) {
-        setStops([...stops, stopInput]);
-        setStopInput("");
-      } else {
-        alert(`Можете да добавите максимум ${MAX_STOPS} спирки.`);
-      }
+    if (
+      stopInput.trim() &&
+      !stops.includes(stopInput) &&
+      stops.length < MAX_STOPS
+    ) {
+      setStops([...stops, stopInput]);
+      setStopInput("");
+    } else if (stops.length >= MAX_STOPS) {
+      alert(`Можете да добавите максимум ${MAX_STOPS} спирки.`);
     }
   };
 
@@ -92,6 +108,16 @@ const EditAdForm: React.FC<EditAdFormProps> = ({ adId }) => {
       return;
     }
 
+    if (
+      start.length > MAX_LOCATION_LENGTH ||
+      end.length > MAX_LOCATION_LENGTH
+    ) {
+      alert(
+        `Началната и крайната точка трябва да са не повече от ${MAX_LOCATION_LENGTH} символа.`
+      );
+      return;
+    }
+
     const seatsNumber = Number(seats);
     if (seatsNumber < 1 || seatsNumber > MAX_SEATS) {
       alert(`Свободните места трябва да бъдат между 1 и ${MAX_SEATS}.`);
@@ -100,6 +126,20 @@ const EditAdForm: React.FC<EditAdFormProps> = ({ adId }) => {
 
     if (new Date(date) < new Date()) {
       alert("Изберете валидна дата.");
+      return;
+    }
+
+    if (car && car.length > MAX_CAR_NAME_LENGTH) {
+      alert(
+        `Името на автомобила трябва да е не повече от ${MAX_CAR_NAME_LENGTH} символа.`
+      );
+      return;
+    }
+
+    if (description && description.length > MAX_DESCRIPTION_LENGTH) {
+      alert(
+        `Описанието трябва да е не повече от ${MAX_DESCRIPTION_LENGTH} символа.`
+      );
       return;
     }
 
@@ -155,6 +195,7 @@ const EditAdForm: React.FC<EditAdFormProps> = ({ adId }) => {
             value={start}
             onChange={(e) => setStart(e.target.value)}
             required
+            maxLength={MAX_LOCATION_LENGTH}
           />
           <datalist id="cities">
             {CITIES.map((city, index) => (
@@ -171,6 +212,7 @@ const EditAdForm: React.FC<EditAdFormProps> = ({ adId }) => {
             value={end}
             onChange={(e) => setEnd(e.target.value)}
             required
+            maxLength={MAX_LOCATION_LENGTH}
           />
           <datalist id="cities">
             {CITIES.map((city, index) => (
@@ -186,13 +228,17 @@ const EditAdForm: React.FC<EditAdFormProps> = ({ adId }) => {
             className="p-2 border rounded w-full"
             value={stopInput}
             onChange={(e) => setStopInput(e.target.value)}
+            maxLength={MAX_LOCATION_LENGTH}
           />
           <button
             type="button"
-            className="bg-green-500 text-white px-8 py-2 mx-auto rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-green-600 transition mt-2"
+            className="bg-green-500 text-white px-8 py-2 mx-auto rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-green-600 transition mt-2 relative overflow-hidden group"
             onClick={handleAddStop}
           >
-            Добави спирка
+            <span className="relative z-10">Добави спирка</span>
+            <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+            <span className="absolute bottom-0 left-0 w-full h-1 bg-green-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+            <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
           </button>
           {stops.length > 0 && (
             <ul className="mt-6 space-y-3">
@@ -242,6 +288,7 @@ const EditAdForm: React.FC<EditAdFormProps> = ({ adId }) => {
             className="p-2 border rounded w-full"
             value={car}
             onChange={(e) => setCar(e.target.value)}
+            maxLength={MAX_CAR_NAME_LENGTH}
           />
         </div>
         <div className="w-full md:w-1/2">
@@ -250,14 +297,20 @@ const EditAdForm: React.FC<EditAdFormProps> = ({ adId }) => {
             className="p-2 border rounded w-full"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            maxLength={MAX_DESCRIPTION_LENGTH}
           ></textarea>
         </div>
-        <button
-          type="submit"
-          className="bg-green-500 text-white px-8 py-2 mx-auto rounded-bl-xl rounded-tr-xl text-lg font-bold hover:bg-green-600 transition duration-300 mt-4"
-        >
-          Запази
-        </button>
+        <div className="col-span-2 flex justify-center mt-6">
+          <button
+            type="submit"
+            className="bg-green-500 text-white px-12 py-3 rounded-bl-xl rounded-tr-xl text-xl font-bold hover:bg-green-600 transition duration-300 relative overflow-hidden group"
+          >
+            <span className="relative z-10">Запази</span>
+            <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+            <span className="absolute bottom-0 left-0 w-full h-1 bg-green-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+            <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
+          </button>
+        </div>
       </form>
     </div>
   );

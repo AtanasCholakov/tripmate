@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 function Page() {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [showVerificationSuccess, setShowVerificationSuccess] = useState(false);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -32,10 +33,15 @@ function Page() {
       } else {
         setIsEmailVerified(false);
       }
+      setIsAuthChecked(true);
     });
 
     return () => unsubscribe();
   }, []);
+
+  if (!isAuthChecked) {
+    return null; // or a loading spinner if preferred
+  }
 
   return (
     <Router>
@@ -98,10 +104,12 @@ function Page() {
 function HomePageContent({ isEmailVerified }: { isEmailVerified: boolean }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [topAds, setTopAds] = useState<any[]>([]);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user: any) => {
       setIsLoggedIn(!!user);
+      setIsAuthChecked(true);
     });
 
     return () => unsubscribe();
@@ -122,6 +130,8 @@ function HomePageContent({ isEmailVerified }: { isEmailVerified: boolean }) {
             date: adData.date,
             seats: adData.seats,
             userId: adData.userId,
+            car: adData.car || "",
+            description: adData.description || "",
           };
           adList.push(ad);
         }
@@ -154,6 +164,10 @@ function HomePageContent({ isEmailVerified }: { isEmailVerified: boolean }) {
     fetchTopAds();
   }, []);
 
+  if (!isAuthChecked) {
+    return null; // or a loading spinner if preferred
+  }
+
   return (
     <>
       {!isLoggedIn && (
@@ -166,10 +180,14 @@ function HomePageContent({ isEmailVerified }: { isEmailVerified: boolean }) {
               topAds.map((ad) => (
                 <OfferCard
                   key={ad.id}
+                  docId={ad.id}
+                  id={ad.userId}
                   start={ad.start}
                   end={ad.end}
                   date={ad.date}
                   seats={ad.seats}
+                  car={ad.car}
+                  description={ad.description}
                 />
               ))
             ) : (

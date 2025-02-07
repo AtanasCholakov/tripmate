@@ -2,24 +2,27 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { auth } from "../lib/firebase";
+import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { MessageCircle, Bell, User, LogOut } from "lucide-react";
+import { MessageCircle, User, LogOut, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { doc, getDoc } from "firebase/firestore";
 
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [unreadMessages, setUnreadMessages] = useState(3);
-  const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setIsLoggedIn(true);
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const userData = userDoc.data();
+        setIsAdmin(userData?.username === "admin");
       } else {
         setIsLoggedIn(false);
+        setIsAdmin(false);
       }
     });
 
@@ -34,6 +37,7 @@ const Navbar = () => {
     console.log("Logging out...");
     await signOut(auth);
     setIsLoggedIn(false);
+    setIsAdmin(false);
   };
 
   return (
@@ -52,27 +56,24 @@ const Navbar = () => {
         <div className="relative flex items-center">
           {isLoggedIn ? (
             <div className="flex items-center space-x-6">
+              {isAdmin && (
+                <Link href="/admin">
+                  <motion.button
+                    className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition-colors"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <Settings size={24} />
+                  </motion.button>
+                </Link>
+              )}
               <Link href="/chat">
                 <motion.button
-                  className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 transition-colors relative"
+                  className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 transition-colors"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                 >
                   <MessageCircle size={24} />
-                  {unreadMessages > 0 && (
-                    <motion.span
-                      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 500,
-                        damping: 30,
-                      }}
-                    >
-                      {unreadMessages}
-                    </motion.span>
-                  )}
                 </motion.button>
               </Link>
               <motion.div
@@ -83,7 +84,7 @@ const Navbar = () => {
                 <motion.img
                   src="/images/menu.png"
                   alt="Profile"
-                  className="h-12 w-12 shadow-lg cursor-pointer"
+                  className="h-11 w-11 shadow-lg cursor-pointer"
                   onClick={toggleMenu}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}

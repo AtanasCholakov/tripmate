@@ -18,7 +18,11 @@ const ForgotPassword = () => {
     setMessage("");
 
     try {
-      await sendPasswordResetEmail(auth, email);
+      const actionCodeSettings = {
+        url: `${window.location.origin}/auth-action?mode=resetPassword`,
+        handleCodeInApp: true,
+      };
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
       setMessage(
         "Изпратен е имейл за възстановяване на паролата. Моля, проверете входящата си поща."
       );

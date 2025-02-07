@@ -11,6 +11,7 @@ import {
   where,
   getDocs,
   type Firestore,
+  updateDoc,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { auth } from "../lib/firebase";
@@ -34,6 +35,7 @@ interface User {
   name: string;
   rating: number;
   profilePicture?: string;
+  votes?: number;
 }
 
 const OfferDetails = () => {
@@ -51,6 +53,16 @@ const OfferDetails = () => {
   const router = useRouter();
   const id = searchParams.get("id");
   const uid = searchParams.get("uid");
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "/";
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -119,13 +131,23 @@ const OfferDetails = () => {
       return;
     }
 
+    // Check if the user is trying to rate themselves
+    if (currentUserId === uid) {
+      setRatingMessage("Не можете да гласувате за себе си");
+      setTimeout(() => setRatingMessage(null), 2000);
+      return;
+    }
+
     try {
+      // First, add the new rating to the ratings collection
       await addDoc(collection(db, "ratings"), {
         fromUserId: currentUserId,
         toUserId: uid,
         rating: value,
+        createdAt: new Date(),
       });
 
+      // Get all ratings for this user
       const userRatingsQuery = query(
         collection(db, "ratings"),
         where("toUserId", "==", uid)
@@ -133,8 +155,17 @@ const OfferDetails = () => {
       const ratingsSnapshot = await getDocs(userRatingsQuery);
 
       const ratings = ratingsSnapshot.docs.map((doc) => doc.data().rating);
-      const averageRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+      const totalVotes = ratings.length;
+      const averageRating = ratings.reduce((a, b) => a + b, 0) / totalVotes;
 
+      // Update the user document with new rating and vote count
+      const userRef = doc(db, "users", uid);
+      await updateDoc(userRef, {
+        rating: averageRating,
+        votes: totalVotes,
+      });
+
+      // Update local state
       if (user) {
         setUser((prevUser) => ({
           ...prevUser!,
@@ -291,10 +322,12 @@ const OfferDetails = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.6 }}
-              className="bg-gray-50 p-6 rounded-lg shadow-md mb-6"
+              className="bg-gray-50 p-6 rounded-lg shadow-md mb-6 w-full max-w-xl"
             >
               <h3 className="text-lg font-semibold mb-2">Описание</h3>
-              <p className="text-gray-800">{ad.description}</p>
+              <p className="text-gray-800 break-words overflow-hidden text-justify leading-relaxed">
+                {ad.description}
+              </p>
             </motion.div>
           )}
 
@@ -378,7 +411,7 @@ const OfferDetails = () => {
                 </AnimatePresence>
               </div>
               <p className="text-sm text-gray-600 mt-2">
-                Рейтинг: {user.rating.toFixed(1)}
+                Рейтинг: {user.rating.toFixed(1)} ({user.votes} гласа)
               </p>
               <motion.div
                 initial={{ y: 20, opacity: 0 }}

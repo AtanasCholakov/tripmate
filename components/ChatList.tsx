@@ -18,7 +18,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { User } from "firebase/auth";
-import { MessageCircle, Search, Trash2 } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 
 interface Chat {
   id: string;
@@ -119,6 +119,12 @@ export default function ChatList({ onChatSelect, currentUser }: ChatListProps) {
 
       const newChatUser = querySnapshot.docs[0];
       const newChatUserId = newChatUser.id;
+
+      // Prevent starting a chat with yourself
+      if (newChatUserId === currentUser.uid) {
+        alert("You can't start a chat with yourself");
+        return;
+      }
 
       const existingChat = chats.find((chat) =>
         chat.participants.includes(newChatUserId)

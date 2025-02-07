@@ -7,6 +7,13 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import CITIES from "@/lib/cities";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  MAX_LOCATION_LENGTH,
+  MAX_STOPS,
+  MAX_SEATS,
+  MAX_CAR_NAME_LENGTH,
+  MAX_DESCRIPTION_LENGTH,
+} from "../lib/constants";
 
 const CreateAdForm = () => {
   const [start, setStart] = useState("");
@@ -20,17 +27,16 @@ const CreateAdForm = () => {
   const [user] = useAuthState(auth);
   const router = useRouter();
 
-  const MAX_STOPS = 5;
-  const MAX_SEATS = 7;
-
   const handleAddStop = () => {
-    if (stopInput.trim() && !stops.includes(stopInput)) {
-      if (stops.length < MAX_STOPS) {
-        setStops([...stops, stopInput]);
-        setStopInput("");
-      } else {
-        alert(`Можете да добавите максимум ${MAX_STOPS} спирки.`);
-      }
+    if (
+      stopInput.trim() &&
+      !stops.includes(stopInput) &&
+      stops.length < MAX_STOPS
+    ) {
+      setStops([...stops, stopInput]);
+      setStopInput("");
+    } else if (stops.length >= MAX_STOPS) {
+      alert(`Можете да добавите максимум ${MAX_STOPS} спирки.`);
     }
   };
 
@@ -56,6 +62,16 @@ const CreateAdForm = () => {
       return;
     }
 
+    if (
+      start.length > MAX_LOCATION_LENGTH ||
+      end.length > MAX_LOCATION_LENGTH
+    ) {
+      alert(
+        `Началната и крайната точка трябва да са не повече от ${MAX_LOCATION_LENGTH} символа.`
+      );
+      return;
+    }
+
     const seatsNumber = Number(seats);
     if (seatsNumber < 1 || seatsNumber > MAX_SEATS) {
       alert(`Свободните места трябва да бъдат между 1 и ${MAX_SEATS}.`);
@@ -64,6 +80,20 @@ const CreateAdForm = () => {
 
     if (new Date(date) < new Date()) {
       alert("Изберете валидна дата.");
+      return;
+    }
+
+    if (car && car.length > MAX_CAR_NAME_LENGTH) {
+      alert(
+        `Името на автомобила трябва да е не повече от ${MAX_CAR_NAME_LENGTH} символа.`
+      );
+      return;
+    }
+
+    if (description && description.length > MAX_DESCRIPTION_LENGTH) {
+      alert(
+        `Описанието трябва да е не повече от ${MAX_DESCRIPTION_LENGTH} символа.`
+      );
       return;
     }
 
@@ -140,6 +170,7 @@ const CreateAdForm = () => {
             value={start}
             onChange={(e) => setStart(e.target.value)}
             required
+            maxLength={MAX_LOCATION_LENGTH}
           />
           <datalist id="cities">
             {CITIES.map((city, index) => (
@@ -160,6 +191,7 @@ const CreateAdForm = () => {
             value={end}
             onChange={(e) => setEnd(e.target.value)}
             required
+            maxLength={MAX_LOCATION_LENGTH}
           />
           <datalist id="cities">
             {CITIES.map((city, index) => (
@@ -180,6 +212,7 @@ const CreateAdForm = () => {
             className="p-2 border rounded w-full"
             value={stopInput}
             onChange={(e) => setStopInput(e.target.value)}
+            maxLength={MAX_LOCATION_LENGTH}
           />
           <button
             type="button"
@@ -255,6 +288,7 @@ const CreateAdForm = () => {
           className="p-2 border rounded"
           value={car}
           onChange={(e) => setCar(e.target.value)}
+          maxLength={MAX_CAR_NAME_LENGTH}
         />
         <motion.textarea
           initial={{ opacity: 0, y: 20 }}
@@ -264,6 +298,7 @@ const CreateAdForm = () => {
           className="p-2 border rounded col-span-2"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          maxLength={MAX_DESCRIPTION_LENGTH}
         ></motion.textarea>
         <motion.button
           initial={{ opacity: 0, y: 20 }}

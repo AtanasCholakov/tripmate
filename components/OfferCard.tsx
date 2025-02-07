@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { auth } from "../lib/firebase"; // Импортиране на Firebase Authentication
 
 interface OfferCardProps {
@@ -22,14 +22,11 @@ const OfferCard = ({
   car,
   description,
 }: OfferCardProps) => {
-  const navigate = useNavigate();
-
   // Проверка дали потребителят е влязъл в профила си
   const checkLoginStatus = () => {
     const user = auth.currentUser; // Проверка дали има влязъл потребител
     if (!user) {
-      // Ако няма влязъл потребител, пренасочваме към страницата за логин
-      navigate("/register"); // Можете да промените на пътя за регистрация, ако е нужно
+      window.location.href = "/register";
     }
   };
 
