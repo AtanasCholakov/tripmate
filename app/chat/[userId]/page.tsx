@@ -1,22 +1,37 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ChatPage from "@/components/ChatPage";
+import { auth } from "@/lib/firebase";
 
-export default async function ChatPageWrapper({
-  params,
-  searchParams,
-}: {
-  params: { userId: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
-  const initialUserId =
-    params.userId || (searchParams.userId as string) || undefined;
+interface PageProps {
+  params: {
+    userId: string;
+  };
+}
+
+export default function ChatPageWrapper({ params }: PageProps) {
+  const router = useRouter();
+  const { userId } = params;
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (!user) {
+        router.push("/");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
 
   return (
     <div className="flex flex-col min-h-screen bg-yellow-50">
       <Navbar />
       <main className="flex-grow">
-        <ChatPage initialUserId={initialUserId} />
+        <ChatPage initialUserId={userId} />
       </main>
       <Footer />
     </div>
