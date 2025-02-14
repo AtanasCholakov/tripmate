@@ -2,7 +2,6 @@
 
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
 import { db } from "../lib/firebase";
 import {
   collection,
@@ -12,6 +11,7 @@ import {
   limit,
   getDoc,
   doc,
+  type QueryFieldFilterConstraint,
 } from "firebase/firestore";
 import OfferCard from "./OfferCard";
 import CITIES from "@/lib/cities";
@@ -19,8 +19,6 @@ import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
 const SearchAdForm = () => {
-  const searchParams = useSearchParams();
-
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [date, setDate] = useState("");
@@ -98,7 +96,7 @@ const SearchAdForm = () => {
     setLoading(true);
     try {
       const adsRef = collection(db, "ads");
-      const constraints = [];
+      const constraints: QueryFieldFilterConstraint[] = [];
 
       if (searchParams.start)
         constraints.push(

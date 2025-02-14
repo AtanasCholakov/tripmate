@@ -13,12 +13,24 @@ import {
   MAX_CAR_NAME_LENGTH,
   MAX_DESCRIPTION_LENGTH,
 } from "../lib/constants";
+import type React from "react";
+
+interface AdData {
+  start: string;
+  end: string;
+  date: string;
+  seats: number;
+  car?: string;
+  description?: string;
+  userId: string;
+}
 
 interface EditAdFormProps {
   adId: string;
+  onAdUpdate: (updatedAdId: string, adData: AdData) => void;
 }
 
-const EditAdForm: React.FC<EditAdFormProps> = ({ adId }) => {
+const EditAdForm: React.FC<EditAdFormProps> = ({ adId, onAdUpdate }) => {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [stopInput, setStopInput] = useState("");
@@ -159,17 +171,15 @@ const EditAdForm: React.FC<EditAdFormProps> = ({ adId }) => {
       });
 
       alert("Обявата е успешно редактирана.");
-      router.push(
-        `/offer-details?id=${encodeURIComponent(adId)}&uid=${encodeURIComponent(
-          user.uid
-        )}&start=${encodeURIComponent(start)}&end=${encodeURIComponent(
-          end
-        )}&date=${encodeURIComponent(date)}&seats=${encodeURIComponent(
-          seats.toString()
-        )}&car=${encodeURIComponent(
-          car || ""
-        )}&description=${encodeURIComponent(description || "")}`
-      );
+      onAdUpdate(adId, {
+        start,
+        end,
+        date,
+        seats: seatsNumber,
+        car,
+        description,
+        userId: user?.uid || "",
+      });
     } catch (error) {
       console.error("Грешка при редактиране на обявата:", error);
       alert("Неуспешно редактиране на обявата. Опитайте отново.");

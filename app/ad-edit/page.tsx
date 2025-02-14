@@ -1,29 +1,26 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import EditAdForm from "@/components/EditAdForm";
+import AdEditContent from "@/components/AdEditContent";
 
-export default function EditAdPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const adId = searchParams.get("id"); // Вземаме ID-то на обявата от URL
-
-  if (!adId) {
-    return <div>Няма намерена обява за редактиране.</div>;
-  }
-
-  const handleAdDetailsRedirect = (updatedAdId: string) => {
-    router.push(`/ad-details?id=${updatedAdId}`);
-  };
-
+export default function AdEditPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      <main className="flex-grow bg-gray-100 flex justify-center items-center py-12">
-        <EditAdForm adId={adId} onAdUpdate={handleAdDetailsRedirect} />
-      </main>
+      <Suspense
+        fallback={
+          <main className="flex-grow bg-gray-100 flex justify-center items-center">
+            <div className="text-center p-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mx-auto mb-4"></div>
+              <p>Зареждане...</p>
+            </div>
+          </main>
+        }
+      >
+        <AdEditContent />
+      </Suspense>
       <Footer />
     </div>
   );

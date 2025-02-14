@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { User, LogOut, Settings } from "lucide-react";
+import { MessageCircle, User, LogOut, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { doc, getDoc } from "firebase/firestore";
 
@@ -67,6 +67,15 @@ const Navbar = () => {
                   </motion.button>
                 </Link>
               )}
+              <Link href="/chat">
+                <motion.button
+                  className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <MessageCircle size={24} />
+                </motion.button>
+              </Link>
               <motion.div
                 className="relative"
                 initial={false}

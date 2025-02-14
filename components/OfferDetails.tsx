@@ -197,7 +197,7 @@ const OfferDetails = () => {
       );
       const querySnapshot = await getDocs(q);
 
-      let existingChatId = null;
+      let existingChatId: string | null = null;
       querySnapshot.forEach((doc) => {
         const chatData = doc.data();
         if (chatData.participants.includes(uid)) {
