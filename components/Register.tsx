@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { auth, db } from "../lib/firebase";
@@ -10,7 +10,7 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
-  onAuthStateChanged,
+  signOut,
 } from "firebase/auth";
 import { setDoc, doc, getDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
@@ -41,16 +41,6 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        window.location.href = "/";
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -104,6 +94,9 @@ const Register = () => {
       };
       await sendEmailVerification(user, actionCodeSettings);
 
+      // Sign out the user immediately after registration
+      await signOut(auth);
+
       // Redirect to a confirmation page
       router.push("/register-confirmation");
     } catch (error: unknown) {
@@ -138,7 +131,8 @@ const Register = () => {
         });
       }
 
-      window.location.href = "/";
+      // Redirect to home page
+      router.push("/");
     } catch (error: unknown) {
       console.error("Error during Google sign-in:", error);
       setError(getErrorMessage(error));
