@@ -413,7 +413,8 @@ const OfferDetails = () => {
                 </AnimatePresence>
               </div>
               <p className="text-sm text-gray-600 mt-2">
-                Рейтинг: {user.rating.toFixed(1)} ({user.votes} гласа)
+                Рейтинг: {user.rating.toFixed(1)} ({user.votes}{" "}
+                {user.votes === 1 ? "глас" : "гласа"})
               </p>
               <motion.div
                 initial={{ y: 20, opacity: 0 }}
