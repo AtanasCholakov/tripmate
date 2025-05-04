@@ -1,5 +1,7 @@
 "use client";
 
+import type React from "react";
+
 import { useState } from "react";
 import { auth, db } from "../lib/firebase";
 import { addDoc, collection } from "firebase/firestore";
@@ -146,17 +148,20 @@ const CreateAdForm = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="p-10 mx-20 mb-20 bg-white shadow rounded-lg"
+      className="p-4 sm:p-6 md:p-10 mx-4 sm:mx-8 md:mx-20 mb-10 sm:mb-20 bg-white shadow rounded-lg"
     >
       <motion.h2
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="text-2xl font-bold mb-4"
+        className="text-xl sm:text-2xl font-bold mb-4"
       >
         Създаване на обява
       </motion.h2>
-      <form className="grid grid-cols-2 gap-4" onSubmit={handleSubmit}>
+      <form
+        className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+        onSubmit={handleSubmit}
+      >
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -203,7 +208,7 @@ const CreateAdForm = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="col-span-2"
+          className="col-span-1 sm:col-span-2"
         >
           <input
             list="cities"
@@ -214,16 +219,18 @@ const CreateAdForm = () => {
             onChange={(e) => setStopInput(e.target.value)}
             maxLength={MAX_LOCATION_LENGTH}
           />
-          <button
-            type="button"
-            className="relative px-20 py-2 mx-auto mt-2 text-lg font-bold text-white bg-green-500 rounded-bl-xl rounded-tr-xl overflow-hidden transition-all duration-300 ease-out hover:shadow-lg group"
-            onClick={handleAddStop}
-          >
-            <span className="z-10 relative">Добави спирка</span>
-            <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
-            <span className="absolute bottom-0 left-0 w-full h-1 bg-green-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
-            <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
-          </button>
+          <div className="flex justify-center mt-2">
+            <button
+              type="button"
+              className="relative px-4 sm:px-20 py-2 text-lg font-bold text-white bg-green-500 rounded-bl-xl rounded-tr-xl overflow-hidden transition-all duration-300 ease-out hover:shadow-lg group"
+              onClick={handleAddStop}
+            >
+              <span className="z-10 relative">Добави спирка</span>
+              <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+              <span className="absolute bottom-0 left-0 w-full h-1 bg-green-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+              <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
+            </button>
+          </div>
           <AnimatePresence>
             {stops.length > 0 && (
               <motion.ul
@@ -242,10 +249,12 @@ const CreateAdForm = () => {
                     transition={{ duration: 0.2 }}
                     className="flex justify-between items-center bg-gray-50 border rounded py-2 px-4 shadow"
                   >
-                    <span className="font-semibold text-gray-700">{stop}</span>
+                    <span className="font-semibold text-gray-700 break-words mr-2">
+                      {stop}
+                    </span>
                     <button
                       type="button"
-                      className="text-red-500 font-bold hover:underline"
+                      className="text-red-500 font-bold hover:underline flex-shrink-0"
                       onClick={() => handleRemoveStop(stop)}
                     >
                       Премахни
@@ -256,62 +265,83 @@ const CreateAdForm = () => {
             )}
           </AnimatePresence>
         </motion.div>
-        <motion.input
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.5 }}
-          type="date"
-          className="p-2 border rounded"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          required
-        />
-        <motion.input
+          className="col-span-1"
+        >
+          <input
+            type="date"
+            className="p-2 border rounded w-full"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+          />
+        </motion.div>
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.5 }}
-          type="number"
-          min="1"
-          max={MAX_SEATS}
-          placeholder={`Свободни места (1-${MAX_SEATS})`}
-          className="p-2 border rounded"
-          value={seats}
-          onChange={(e) => setSeats(Number(e.target.value))}
-          required
-        />
-        <motion.input
+          className="col-span-1"
+        >
+          <input
+            type="number"
+            min="1"
+            max={MAX_SEATS}
+            placeholder={`Свободни места (1-${MAX_SEATS})`}
+            className="p-2 border rounded w-full"
+            value={seats}
+            onChange={(e) => setSeats(Number(e.target.value))}
+            required
+          />
+        </motion.div>
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
-          type="text"
-          placeholder="Автомобил (опционално)"
-          className="p-2 border rounded"
-          value={car}
-          onChange={(e) => setCar(e.target.value)}
-          maxLength={MAX_CAR_NAME_LENGTH}
-        />
-        <motion.textarea
+          className="col-span-1 sm:col-span-2"
+        >
+          <input
+            type="text"
+            placeholder="Автомобил (опционално)"
+            className="p-2 border rounded w-full"
+            value={car}
+            onChange={(e) => setCar(e.target.value)}
+            maxLength={MAX_CAR_NAME_LENGTH}
+          />
+        </motion.div>
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
-          placeholder="Описание (опционално)"
-          className="p-2 border rounded col-span-2"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          maxLength={MAX_DESCRIPTION_LENGTH}
-        ></motion.textarea>
-        <motion.button
+          className="col-span-1 sm:col-span-2"
+        >
+          <textarea
+            placeholder="Описание (опционално)"
+            className="p-2 border rounded w-full"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            maxLength={MAX_DESCRIPTION_LENGTH}
+            rows={4}
+          ></textarea>
+        </motion.div>
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.7 }}
-          type="submit"
-          className="relative px-20 py-2 mx-auto text-lg font-bold text-white bg-green-500 rounded-bl-xl rounded-tr-xl overflow-hidden transition-all duration-300 ease-out hover:shadow-lg group col-span-2"
+          className="col-span-1 sm:col-span-2 flex justify-center"
         >
-          <span className="z-10 relative">Създай</span>
-          <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
-          <span className="absolute bottom-0 left-0 w-full h-1 bg-green-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
-          <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
-        </motion.button>
+          <button
+            type="submit"
+            className="relative px-8 sm:px-20 py-2 text-lg font-bold text-white bg-green-500 rounded-bl-xl rounded-tr-xl overflow-hidden transition-all duration-300 ease-out hover:shadow-lg group"
+          >
+            <span className="z-10 relative">Създай</span>
+            <span className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-30 transform scale-0 group-hover:scale-150 transition-all duration-500 ease-out"></span>
+            <span className="absolute bottom-0 left-0 w-full h-1 bg-green-300 transform scale-x-0 group-hover:scale-x-100 transition-all duration-500 ease-in-out"></span>
+            <span className="absolute top-0 left-0 w-full h-full bg-green-500 opacity-20 group-hover:opacity-0 transition-all duration-500 ease-in-out"></span>
+          </button>
+        </motion.div>
       </form>
     </motion.div>
   );
